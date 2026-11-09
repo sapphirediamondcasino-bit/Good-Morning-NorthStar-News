@@ -2039,5 +2039,144 @@ dock();plutoRefresh();syncPoll();setInterval(syncPoll,2e4);route();
 })();
 </script>
 
+<script>
+/* ===== NorthStar TV Network: guide, channels, schedules, ads, live override, cast, TV mode, admin ===== */
+(function(){"use strict";
+const H=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const Q=(s,r=document)=>r.querySelector(s),QA=(s,r=document)=>[...r.querySelectorAll(s)];
+const D={get:(k,d)=>{try{return DB.get("tv_"+k,d)}catch(e){return d}},set:(k,v)=>{try{DB.set("tv_"+k,v)}catch(e){}}};
+const yid=v=>{const m=String(v||"").match(/(?:v=|youtu\.be\/|embed\/)([\w-]{11})|^([\w-]{11})$/);return m?(m[1]||m[2]):""};
+const isAd=()=>{try{return isAdmin(me())}catch(e){return false}};
+const MIN=6e4;
+/* ---- channel lineup (cat: net=main, paid, movie, kids, spec, music) ---- */
+const L=(n,name,cat,what,hue)=>({n,name:"NorthStar "+name,cat,what,hue,on:true});
+const SEED=[L(2,"Live","net","Live broadcasts, special events and scheduled programming",350),L(3,"Paid Programming","paid","Sponsored programs, paid advertisements and infomercials",40),L(4,"Showcase","paid","Sponsored entertainment and advertiser presentations",30),L(5,"Classic TV","net","Classic television series",25),L(6,"Variety","net","General entertainment",200),L(7,"Reality","net","Reality and lifestyle shows",320),L(8,"Comedy","net","Comedy series, stand-up and specials",50),L(9,"Drama","net","Drama series and specials",270),L(10,"Mystery","net","Mystery, crime and suspense",240),L(11,"Documentary","net","Documentaries and factual programming",160),L(12,"Spotlight","net","Celebrity interviews and entertainment specials",300),L(13,"Music","net","Music videos and performances",280),L(14,"Gaming","net","Gaming entertainment and shows",140),L(15,"Sports Desk","net","Sports news and coverage",10),
+L(20,"Premiere","movie","Featured movies and premieres",355),L(21,"Cinema","movie","General movie programming",215),L(22,"Classics","movie","Classic movies",35),L(23,"Action","movie","Action and adventure films",0),L(24,"Thriller","movie","Thrillers and suspense movies",260),L(25,"Family Movies","movie","Family-friendly films",120),L(26,"Independent","movie","Independent films",180),
+L(32,"Kids","kids","Children's entertainment",190),L(33,"Junior","kids","Programming for younger children",170),L(34,"Toons","kids","Animated television",20),L(35,"Animation","kids","Animated series and specials",230),L(36,"Family","kids","Family-friendly television",100),L(37,"Learning","kids","Educational programming",210),L(38,"Nature","kids","Wildlife and nature",130),L(39,"Adventure","kids","Family adventure programming",60),L(42,"Cartoon Club","kids","Cartoon programming",330),L(43,"Retro Toons","kids","Classic cartoons",45),L(44,"Anime","kids","Anime programming",310),L(65,"Family Plus","kids","Family entertainment and specials",110),
+L(50,"Travel","spec","Travel shows and destinations",195),L(51,"Food","spec","Cooking and food entertainment",15),L(52,"Home","spec","Home improvement and lifestyle",85),L(53,"Outdoors","spec","Outdoor activities",125),L(54,"Science","spec","Science and technology",220),L(55,"History","spec","Historical programming",30),L(56,"Health & Living","spec","Wellness and lifestyle",150),L(57,"Motors","spec","Automotive programming",5),L(58,"Pets & Animals","spec","Pets, wildlife and animals",95),L(59,"After Dark","spec","Mature-audience entertainment (content controls apply)",290),
+L(70,"Hits","music","Popular music",325),L(71,"Country","music","Country music",40),L(72,"Rock","music","Rock music",355),L(73,"Hip-Hop & R&B","music","Hip-hop and R&B",270),L(74,"Throwback","music","Classic hits",55),L(75,"Live Sessions","music","Live music sessions",200)];
+const CATN={net:"Main Network",paid:"Paid Programming",movie:"Movies",kids:"Kids & Family",spec:"Specialty & Lifestyle",music:"Music & Pop Culture"};
+const TYPES={commercial:"Commercial",trailer:"Movie trailer",movie:"Movie",show:"TV show",episode:"TV episode",special:"Special",sponsored:"Sponsored",intro:"Introduction"};
+/* ---- rules enforced on scheduling ---- */
+const OK={movie:["movie"],paid:["sponsored","commercial","special"],other:["show","episode","movie","special"]};
+const allowed=(ch,t)=>(ch.cat==="movie"?OK.movie:ch.cat==="paid"?OK.paid:OK.other).includes(t);
+const chans=()=>{let c=D.get("channels",null);if(!Array.isArray(c)){c=SEED;D.set("channels",c)}return c.slice().sort((a,b)=>a.n-b.n)};
+const lib=()=>D.get("lib",[]);
+const AD=()=>Object.assign({count:5,adMin:.5,every:30,introOn:true,movieTrailers:1,movieIntro:true},D.get("ads",{}));
+const chAd=ch=>Object.assign({},AD(),D.get("ad_"+ch.n,{}));
+const progs=ch=>{const ids=D.get("sch_"+ch.n,[]),L=lib(),a=ids.map(i=>L.find(x=>x.id===i)).filter(x=>x&&allowed(ch,x.type)&&x.type!=="trailer");return a.length?a:[{id:"slate"+ch.n,type:"slate",title:ch.name+" Programming Slate",dur:30}]};
+const pool=t=>lib().filter(x=>x.type===t&&yid(x.yt));
+function liveOn(){try{const l=DB.get("bc_live",{on:false});if(l&&l.on&&l.id)return l;const ev=(DB.get("live",[])||[]).find(e=>e.onair&&yid(e.yt));return ev?{on:true,id:yid(ev.yt),title:ev.title}:null}catch(e){return null}}
+const midnight=t=>{const d=new Date(t);d.setHours(0,0,0,0);return d.getTime()};
+/* ---- timeline: every channel computed independently from the wall clock ---- */
+const cache={};
+function timeline(ch,t){const day=midnight(t),k=ch.n+":"+day+":"+JSON.stringify([D.get("sch_"+ch.n,[]),chAd(ch),lib().length]);if(cache[ch.n]&&cache[ch.n].k===k)return cache[ch.n].s;
+ const P=progs(ch),a=chAd(ch),S=[],iv=pool("intro"),cm=pool("commercial"),tr=pool("trailer");let tt=day,i=0,ci=0,ti=0,since=1e9,g=0;
+ const seg=(kind,title,it,dur)=>{S.push({kind,title,it,yt:it&&yid(it.yt),start:tt,end:tt+dur*MIN});tt+=dur*MIN};
+ while(tt<day+48*36e5&&g++<4000){const p=P[i%P.length];i++;
+  if(ch.cat==="movie"){if(a.movieIntro&&iv.length)seg("intro","NorthStar Introduction",iv[0],.25);for(let n=0;n<a.movieTrailers&&tr.length;n++){const x=tr[ti++%tr.length];seg("trailer","Trailer: "+x.title,x,x.dur||2)}}
+  else if(ch.cat==="net"||ch.cat==="kids"||ch.cat==="spec"||ch.cat==="music"){if(since>=a.every){if(a.introOn&&iv.length)seg("intro","NorthStar Introduction",iv[0],.25);for(let n=0;n<a.count;n++){const x=cm.length?cm[ci++%cm.length]:null;seg("ad",x?x.title:"Commercial break",x,x?(x.dur||a.adMin):a.adMin)}since=0}}
+  seg("program",p.title,p,p.dur||30);since+=p.dur||30}
+ cache[ch.n]={k,s:S};return S}
+function nowOn(ch,t){t=t||Date.now();const lv=ch.n===2&&liveOn();const S=timeline(ch,t);let i=S.findIndex(s=>t>=s.start&&t<s.end);if(i<0)i=0;const cur=S[i];
+ let prog=cur.kind==="program"?cur:null,pi=i;if(!prog){for(let j=i;j<S.length;j++)if(S[j].kind==="program"){prog=S[j];pi=j;break}}
+ const ups=[];for(let j=pi+1;j<S.length&&ups.length<8;j++)if(S[j].kind==="program")ups.push(S[j]);
+ const brk=cur.kind!=="program"?cur:null;
+ return{lv,cur,prog,next:ups[0],ups,brk,type:prog&&prog.it?prog.it.type:"slate"}}
+const fmt=t=>new Date(t).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"});
+const badge=(ch,o)=>o.lv?"LIVE":ch.cat==="paid"?"PAID PROGRAM":ch.cat==="movie"?"MOVIE":({movie:"MOVIE",show:"TV SHOW",episode:"TV SHOW",special:"SPECIAL",sponsored:"PAID PROGRAM"})[o.type]||"";
+const logo=ch=>`<span class="tvlg" style="--h:${ch.hue||200}" aria-hidden="true">${H(ch.n)}</span>`;
+function errLog(m){const e=D.get("err",[]);e.unshift({t:Date.now(),m});D.set("err",e.slice(0,60))}
+/* ---- one-time seed: bring the existing Live/Broadcast schedule into the shared library ---- */
+function seedLib(){if(D.get("seeded",0))return;const s=DB.get("bc_sched",null);if(Array.isArray(s)&&s.length&&!lib().length){const map={movie:["movie",100],trailer:["trailer",2],commercial:["commercial",.5],program:["special",30]};D.set("lib",s.filter(x=>yid(x.id)).map((x,i)=>({id:"seed"+i,type:(map[x.kind]||map.program)[0],title:x.title||"Untitled",yt:x.id,dur:(map[x.kind]||map.program)[1],owned:true})))}D.set("seeded",1)}
+/* ---- styles ---- */
+const css=document.createElement("style");css.textContent=`
+.tvw{max-width:1280px;margin:0 auto;padding:12px}.tvg{display:grid;grid-template-columns:minmax(0,3fr) minmax(280px,2fr);gap:16px}@media(max-width:900px){.tvg{grid-template-columns:1fr}}
+.tvscr{position:relative;aspect-ratio:16/9;background:#000;border-radius:14px;overflow:hidden}.tvscr iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.tvslate{position:absolute;inset:0;display:grid;place-items:center;text-align:center;color:#fff;padding:20px;background:linear-gradient(135deg,hsl(var(--h) 60% 22%),#0a0f1c)}.tvslate b{font:800 clamp(20px,4vw,38px)/1.1 Newsreader,serif}
+.tvun{position:absolute;right:10px;bottom:10px;z-index:3;background:rgba(0,0,0,.78);color:#fff;border:1px solid #fff;border-radius:20px;padding:8px 14px;cursor:pointer;font:600 14px system-ui}
+.tvnp{display:flex;gap:12px;align-items:center;background:#0b1224;color:#fff;border-radius:12px;padding:10px 14px;margin:10px 0}.tvnp small{display:block;color:#cbd5e1}.tvnp .k{font:700 11px system-ui;letter-spacing:.1em;color:#f5c542}.tvnp .k.r{color:#fff;background:#c4161c;padding:2px 7px;border-radius:4px}
+.tvlg{flex:0 0 auto;display:inline-grid;place-items:center;width:44px;height:44px;border-radius:10px;background:hsl(var(--h) 65% 38%);color:#fff;font:800 17px system-ui}
+.tvbar{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}.tvbar .btn,.tvbar button{cursor:pointer}
+.tvside{background:var(--paper,#fff);border:1px solid var(--line,#ddd);border-radius:14px;padding:12px;max-height:640px;overflow:auto}
+.tvrow{display:grid;grid-template-columns:50px minmax(0,1fr);gap:10px;align-items:center;width:100%;text-align:left;background:none;color:inherit;border:0;border-bottom:1px solid var(--line,#ddd);padding:8px 4px;cursor:pointer;font:inherit}
+.tvrow:hover,.tvrow:focus,.tvrow.on{background:rgba(196,22,28,.1);outline:2px solid transparent}.tvrow:focus{outline:3px solid #f5c542}.tvrow.on{box-shadow:inset 4px 0 #c4161c}
+.tvrow b{display:block}.tvrow small{display:block;opacity:.75}.tvbd{display:inline-block;font:700 10px system-ui;letter-spacing:.06em;padding:2px 6px;border-radius:4px;background:#334;color:#fff;margin-left:6px}.tvbd.LIVE{background:#c4161c}.tvbd.PAID{background:#8a5a00}
+.tvcat{font:700 12px system-ui;letter-spacing:.08em;text-transform:uppercase;margin:12px 0 2px;opacity:.7}
+.tvlin td{padding:4px 8px;border-bottom:1px solid var(--line,#ddd)}.tvpaid{background:#fff4d6;color:#5b3b00;border-radius:8px;padding:6px 10px;margin:6px 0;font-weight:600}
+.tvtv .tvw{max-width:none}.tvtv .tvrow{font-size:22px;padding:14px 6px}.tvtv .tvlg{width:56px;height:56px;font-size:22px}.tvtv .tvside{max-height:80vh}
+.tvad label{display:block;margin:4px 0}.tvad input,.tvad select{margin:2px 4px 2px 0}
+`;document.head.appendChild(css);
+/* ---- the TV view ---- */
+let pid=0,shown="",sel=D.get("sel",2),tickT=0,castConn=null,ccLoaded=false;
+const TVMODE=/Xbox|PlayStation|SmartTV|Tizen|Web0S|WebOS|AFT|Roku|Android TV|GoogleTV/i.test(navigator.userAgent)||/[?&]tv=1/.test(location.search);
+function player(box,ch,o,unmute){const c=o.cur,id=o.lv?o.lv.id:c.yt;const key=ch.n+":"+(id||"slate")+":"+(o.lv?"L":c.start)+":"+(unmute?1:0);if(box.dataset.k===key)return;box.dataset.k=key;
+ if(!id){const t=o.brk&&!id?o.brk.title:(o.prog?o.prog.title:ch.name);box.innerHTML=`<div class="tvslate" style="--h:${ch.hue}"><div><small>${H(ch.name)}</small><br><b>${H(t)}</b><p>${ch.n===2&&!o.lv?"Scheduled programming resumes here. Live broadcasts take over automatically.":"Add approved programming to this channel in TV Admin."}</p></div></div>`;return}
+ const off=o.lv?0:Math.max(0,Math.floor((Date.now()-c.start)/1e3));const un=unmute||D.get("snd",0);
+ box.innerHTML=`<iframe src="https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}?autoplay=1&mute=${un?0:1}&start=${off}&rel=0&playsinline=1" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen title="${H(ch.name)}"></iframe>${un?"":'<button class="tvun">&#128266; Tap for sound</button>'}`;
+ const b=Q(".tvun",box);if(b)b.onclick=()=>{D.set("snd",1);box.dataset.k="";player(box,ch,o,true)}}
+function guideRows(q){const C=chans().filter(c=>c.on&&(!q||(c.name+" "+c.n+" "+c.what).toLowerCase().includes(q)));let last="";
+ return C.map(ch=>{const o=nowOn(ch),h=last!==ch.cat?`<div class="tvcat">${CATN[ch.cat]||""}</div>`:"";last=ch.cat;const bd=badge(ch,o);
+  return h+`<button class="tvrow ${ch.n===sel?"on":""}" data-ch="${ch.n}" data-testid="tv-channel-${ch.n}">${logo(ch)}<span><b>${H(ch.name)}${bd?`<span class="tvbd ${bd.split(" ")[0]}">${bd}</span>`:""}</b><small>${o.lv?"LIVE: "+H(o.lv.title||"Live broadcast"):"Now: "+H(o.prog.title)+" &middot; "+fmt(o.prog.start)+"&ndash;"+fmt(o.prog.end)}</small><small>${o.next?"Next: "+H(o.next.title)+" &middot; "+fmt(o.next.start):""}</small></span></button>`}).join("")||'<p class="mute">No matching channels.</p>'}
+function lineup(ch){const o=nowOn(ch),S=timeline(ch,Date.now()),t=Date.now();const rows=S.filter(s=>s.end>t&&s.start<t+8*36e5).slice(0,40);
+ return `<h3>${H(ch.n)} &middot; ${H(ch.name)} lineup</h3>${ch.cat==="paid"?'<div class="tvpaid">PAID PROGRAMMING: the content on this channel is sponsored or advertiser-provided.</div>':""}<table class="tvlin" style="width:100%">${rows.map(s=>`<tr><td style="white-space:nowrap">${fmt(s.start)}&ndash;${fmt(s.end)}</td><td>${s.kind==="program"?"<b>"+H(s.title)+"</b>":'<span class="mute">'+(s.kind==="ad"?"Commercial: ":"")+H(s.title)+"</span>"}</td><td>${s.kind==="program"?H(TYPES[s.it&&s.it.type]||"Programming"):"Break"}</td></tr>`).join("")}</table>`}
+function banner(ch,o){const live=!!o.lv;return `<span class="tvlg" style="--h:${ch.hue}">${H(ch.n)}</span><span><span class="k ${live?"r":""}">${live?"LIVE":o.brk?"COMMERCIAL BREAK":"NOW PLAYING"}</span><b style="display:block;font-size:18px">${H(live?(o.lv.title||"Live broadcast"):o.prog.title)}</b><small>Good Morning NorthStar News &middot; ${H(ch.name)}${o.next?" &middot; Up next: "+H(o.next.title):""}</small></span>`}
+V.tv=V.channels=V.tvguide=function(a,el){seedLib();clearInterval(tickT);document.documentElement.classList.toggle("tvtv",TVMODE);
+ const n=parseInt(a,10);if(n&&chans().some(c=>c.n===n&&c.on))sel=n;const mk=()=>chans().find(c=>c.n===sel&&c.on)||chans().find(c=>c.on);
+ el.innerHTML=`<div class="tvw" data-testid="tv-page"><h1 style="font:800 clamp(30px,5vw,54px) Newsreader,serif;margin:0">NorthStar TV</h1><p class="mute">Good Morning NorthStar News network guide. Pick a channel and it starts playing.</p>
+ <div class="tvg"><div><div class="tvscr" id="tvp"></div><div class="tvnp" id="tvb" role="status" aria-live="polite" data-testid="northstar-now-banner"></div>
+ <div class="tvbar"><button class="btn alt" id="tvup">&#9650; Channel up</button><button class="btn alt" id="tvdn">&#9660; Channel down</button><button class="btn alt" id="tvfs">Full screen</button><button class="btn" id="tvcast" data-testid="tv-cast">Cast</button>${isAd()?'<a class="btn alt" href="#tvadmin">TV Admin</a>':""}</div><div id="tvcs" class="mute"></div><div id="tvln"></div></div>
+ <aside class="tvside"><input id="tvq" type="search" placeholder="Search channels" aria-label="Search channels" style="width:100%;margin-bottom:6px"><div id="tvgl"></div></aside></div></div>`;
+ const box=Q("#tvp",el),draw=()=>{const ch=mk();if(!ch)return;sel=ch.n;D.set("sel",sel);const o=nowOn(ch);Q("#tvb",el).innerHTML=banner(ch,o);Q("#tvln",el).innerHTML=lineup(ch);player(box,ch,o);if(castConn&&castConn.state==="connected"){try{castConn.send(JSON.stringify({ch:sel}))}catch(e){}}};
+ const rows=()=>{const g=Q("#tvgl",el);if(!g)return;const f=document.activeElement&&g.contains(document.activeElement)?document.activeElement.dataset.ch:null;g.innerHTML=guideRows(Q("#tvq",el).value.trim().toLowerCase());if(f){const b=Q(`[data-ch="${f}"]`,g);b&&b.focus()}};
+ const pick=c=>{sel=c;box.dataset.k="";location.hash="#tv/"+c;};
+ el.addEventListener("click",e=>{const b=e.target.closest(".tvrow");if(b){e.preventDefault();pick(+b.dataset.ch)}});
+ const step=d=>{const C=chans().filter(c=>c.on),i=C.findIndex(c=>c.n===sel);pick(C[(i+d+C.length)%C.length].n)};
+ Q("#tvup",el).onclick=()=>step(1);Q("#tvdn",el).onclick=()=>step(-1);Q("#tvfs",el).onclick=()=>{const s=Q("#tvp",el);(s.requestFullscreen||s.webkitRequestFullscreen||function(){}).call(s)};
+ Q("#tvq",el).oninput=rows;
+ el.addEventListener("keydown",e=>{const r=QA(".tvrow",el),i=r.indexOf(document.activeElement);if(i<0)return;if(e.key==="ArrowDown"){e.preventDefault();(r[i+1]||r[0]).focus()}else if(e.key==="ArrowUp"){e.preventDefault();(r[i-1]||r[r.length-1]).focus()}});
+ Q("#tvcast",el).onclick=()=>cast(el);
+ draw();rows();tickT=setInterval(()=>{if(!el.isConnected){clearInterval(tickT);return}draw();rows()},15e3);
+ if(TVMODE){const b=Q(`.tvrow.on`,el);b&&b.focus()}};
+/* ---- casting: Presentation API (Chromecast via Chrome), AirPlay hint, honest device notes ---- */
+function cast(el){const m=Q("#tvcs",el),u=location.origin&&location.origin!=="null"?location.href.split("#")[0]+"?tv=1#tv/"+sel:"";
+ if(window.PresentationRequest&&u&&/^https?:/.test(u)){try{const r=new PresentationRequest([u]);r.start().then(c=>{castConn=c;m.textContent="Casting channel "+sel+". Change channels here and the TV follows. Close the cast tab/session to return.";c.onclose=c.onterminate=()=>{castConn=null;m.textContent="Cast ended. Back on this device."}}).catch(e=>{m.textContent="No cast device chosen or none found. Use your browser's Cast menu, AirPlay, or open this page on the TV browser."})}catch(e){m.textContent="Casting is not available in this browser."}}
+ else m.innerHTML="Casting from this page needs it to be hosted on https and opened in Chrome or Edge (Chromecast / Google TV), or use AirPlay in Safari (Apple TV). On Xbox, Fire TV, Samsung and LG browsers open this site directly. Roku needs a native channel app fed by this schedule (see TV Admin &rarr; Streaming sources)."}
+if(/[?&]tv=1/.test(location.search)&&navigator.presentation&&navigator.presentation.receiver){navigator.presentation.receiver.connectionList.then(l=>{const h=c=>c.onmessage=e=>{try{const d=JSON.parse(e.data);if(d.ch)location.hash="#tv/"+d.ch}catch(x){}};l.connections.forEach(h);l.onconnectionavailable=e=>h(e.connection)}).catch(()=>{})}
+/* ---- admin ---- */
+V.tvadmin=function(a,el){if(!isAd()){el.innerHTML="<p>Admins only.</p>";return}seedLib();const C=chans(),Lb=lib(),lv=liveOn();
+ const sch=ch=>D.get("sch_"+ch.n,[]);
+ el.innerHTML=`<div class="tvw tvad" data-testid="tv-admin"><h1>NorthStar TV Admin</h1><p><a href="#tv">&larr; Back to guide</a></p>
+ <div class="card"><h3>Channel 2: Go Live</h3><p>Status: <b>${lv?"LIVE: "+H(lv.title||""):"Scheduled programming"}</b>. Other channels never stop. Shares the Live / Broadcast Go Live setting.</p><input id="glt" placeholder="Live title"><input id="gll" placeholder="YouTube live link or ID"> <button class="btn" id="glg">Go Live</button> <button class="btn alt" id="gle">End live</button></div>
+ <div class="card"><h3>Shared library (${Lb.length})</h3><p class="mute">Only add content you own, have licensed, or are authorized to rebroadcast.</p>
+ <select id="lt">${Object.entries(TYPES).map(([k,v])=>`<option value="${k}">${v}</option>`).join("")}</select><input id="ln" placeholder="Title"><input id="ly" placeholder="YouTube link or ID"><input id="ld" type="number" step="0.25" min="0.1" placeholder="Minutes" style="width:90px"><label><input type="checkbox" id="lo"> I own or am licensed to show this</label><button class="btn" id="la">Add to library</button>
+ <table style="width:100%">${Lb.map(x=>`<tr><td><b>${H(x.title)}</b><br><span class="mute">${TYPES[x.type]} &middot; ${x.dur} min &middot; ${H(x.yt)}</span></td><td><button class="btn alt" data-ld="${H(x.id)}">Remove</button></td></tr>`).join("")||'<tr><td class="mute">Empty.</td></tr>'}</table></div>
+ <div class="card"><h3>Channels &amp; schedules</h3><div class="filters"><input id="cn" type="number" placeholder="Number" style="width:90px"><input id="cm" placeholder="Name"><select id="cc">${Object.entries(CATN).map(([k,v])=>`<option value="${k}">${v}</option>`).join("")}</select><button class="btn" id="ca">Create channel</button></div>
+ ${C.map(ch=>{const o=nowOn(ch),ok=Lb.filter(x=>allowed(ch,x.type)&&x.type!=="trailer"),a2=chAd(ch);return `<details style="border-top:1px solid #ddd;padding:6px 0"><summary><b>${ch.n} ${H(ch.name)}</b> ${ch.on?"":"(off)"} &middot; <span class="mute">${o.lv?"LIVE":H(o.prog.title)}</span></summary>
+  <div class="filters"><input data-rn="${ch.n}" value="${H(ch.name)}"><input data-rnum="${ch.n}" type="number" value="${ch.n}" style="width:80px"><button class="btn alt" data-sv="${ch.n}">Save</button><button class="btn alt" data-tg="${ch.n}">${ch.on?"Disable":"Enable"}</button><button class="btn alt" data-rm="${ch.n}">Remove</button></div>
+  ${ch.cat==="movie"?`<label><input type="checkbox" data-mi="${ch.n}" ${a2.movieIntro?"checked":""}> Intro before movies</label><label>Trailers before each movie <input type="number" min="0" max="5" data-mt="${ch.n}" value="${a2.movieTrailers}" style="width:60px"></label><p class="mute">Movie-only channel: TV episodes and shows are blocked. The 5-ad sequence does not apply.</p>`:ch.cat==="paid"?'<p class="mute">Paid channel: sponsored, commercial and special content only. Labeled PAID PROGRAM.</p>':`<label>Ads per sequence <input type="number" min="0" max="12" data-ac="${ch.n}" value="${a2.count}" style="width:60px"></label><label>Minutes of programming between sequences <input type="number" min="5" max="180" data-ae="${ch.n}" value="${a2.every}" style="width:70px"></label><label><input type="checkbox" data-ai="${ch.n}" ${a2.introOn?"checked":""}> Intro before each sequence</label>`}
+  <button class="btn alt" data-as="${ch.n}">Save ad settings</button>
+  <p><b>Lineup (loops):</b></p><ol>${sch(ch).map((id,i)=>{const x=Lb.find(y=>y.id===id);return x?`<li>${H(x.title)} (${TYPES[x.type]}) <button class="btn alt" data-sr="${ch.n}:${i}">&times;</button></li>`:""}).join("")||'<li class="mute">Empty. Showing the slate.</li>'}</ol>
+  <select data-sp="${ch.n}">${ok.map(x=>`<option value="${H(x.id)}">${H(x.title)} (${TYPES[x.type]})</option>`).join("")}</select><button class="btn" data-sa="${ch.n}">Add to lineup</button></details>`}).join("")}</div>
+ <div class="card"><h3>Playback errors</h3>${D.get("err",[]).map(e=>`<div class="mute">${new Date(e.t).toLocaleString()}: ${H(e.m)}</div>`).join("")||'<p class="mute">None logged.</p>'}<button class="btn alt" id="ce">Clear</button></div>
+ <div class="card"><h3>Streaming sources / devices</h3><p class="mute">Schedules are computed in the browser from a shared library, so every channel runs independently. Roku and native Smart TV apps need a small app that reads the same schedule: export it below as JSON for that backend.</p><textarea readonly rows="4" style="width:100%">${H(JSON.stringify({channels:C,library:Lb,schedules:Object.fromEntries(C.map(c=>[c.n,sch(c)]))}))}</textarea></div></div>`;
+ const R=()=>route(),on=(s,f)=>QA(s,el).forEach(b=>b.onclick=()=>f(b));
+ Q("#glg",el).onclick=()=>{const id=yid(Q("#gll",el).value);if(!id)return say("Enter a YouTube link or ID.");DB.set("bc_live",{on:true,id,title:Q("#glt",el).value||"NorthStar Live",t:Date.now()});say("Channel 2 is LIVE.");R()};
+ Q("#gle",el).onclick=()=>{DB.set("bc_live",{on:false});say("Live ended. Schedule resumes.");R()};
+ Q("#la",el).onclick=()=>{const t=Q("#lt",el).value,y=Q("#ly",el).value,n=Q("#ln",el).value.trim(),d=parseFloat(Q("#ld",el).value);if(!yid(y)||!n||!(d>0))return say("Title, a valid YouTube link and minutes are required.");if(!Q("#lo",el).checked)return say("Confirm you own or are licensed to show this.");const L2=lib();L2.push({id:"c"+Date.now(),type:t,title:n,yt:yid(y),dur:d,owned:true});D.set("lib",L2);R()};
+ on("[data-ld]",b=>{D.set("lib",lib().filter(x=>x.id!==b.dataset.ld));R()});
+ Q("#ca",el).onclick=()=>{const n=parseInt(Q("#cn",el).value,10),m=Q("#cm",el).value.trim();if(!n||!m)return say("Number and name required.");if(chans().some(c=>c.n===n))return say("That number is taken.");const c=chans();c.push({n,name:m,cat:Q("#cc",el).value,what:"",hue:(n*37)%360,on:true});D.set("channels",c);R()};
+ const upd=(n,f)=>{const c=chans();const x=c.find(y=>y.n===n);if(x)f(x);D.set("channels",c);R()};
+ on("[data-sv]",b=>{const n=+b.dataset.sv,nm=Q(`[data-rn="${n}"]`,el).value,nn=parseInt(Q(`[data-rnum="${n}"]`,el).value,10);if(nn!==n&&chans().some(c=>c.n===nn))return say("Number taken.");if(nn!==n){const s=D.get("sch_"+n,[]);D.set("sch_"+nn,s)}upd(n,x=>{x.name=nm;x.n=nn||n})});
+ on("[data-tg]",b=>upd(+b.dataset.tg,x=>x.on=!x.on));on("[data-rm]",b=>{if(confirm("Remove this channel?")){D.set("channels",chans().filter(c=>c.n!==+b.dataset.rm));R()}});
+ on("[data-as]",b=>{const n=+b.dataset.as,o={};const g=(k,f)=>{const i=Q(`[data-${k}="${n}"]`,el);if(i)o[f]=i.type==="checkbox"?i.checked:+i.value};g("ac","count");g("ae","every");g("ai","introOn");g("mi","movieIntro");g("mt","movieTrailers");D.set("ad_"+n,o);say("Saved.");R()});
+ on("[data-sa]",b=>{const n=+b.dataset.sa,ch=chans().find(c=>c.n===n),id=Q(`[data-sp="${n}"]`,el).value,x=lib().find(y=>y.id===id);if(!x||!allowed(ch,x.type))return say("That content type is not allowed on this channel.");const s=D.get("sch_"+n,[]);s.push(id);D.set("sch_"+n,s);R()});
+ on("[data-sr]",b=>{const[n,i]=b.dataset.sr.split(":");const s=D.get("sch_"+n,[]);s.splice(+i,1);D.set("sch_"+n,s);R()});
+ Q("#ce",el).onclick=()=>{D.set("err",[]);R()}};
+/* ---- nav link ---- */
+const oc=window.chrome;if(typeof oc==="function"){window.chrome=function(){const r=oc.apply(this,arguments);const n=Q("#nav");if(n&&!Q(".tvnl",n)){const a=document.createElement("a");a.href="#tv";a.className="tvnl";a.textContent="NorthStar TV";n.insertBefore(a,n.firstChild)}return r}}
+try{if(/^(tv|channels|tvguide|tvadmin)/.test(cur))route();else window.chrome()}catch(e){}
+})();
+</script>
 </body>
 </html>
