@@ -2307,7 +2307,7 @@ const css=document.createElement("style");css.textContent=`
 @media(max-width:700px){.tvov{position:fixed;z-index:60}.tvctl button{padding:6px 10px;font-size:12px}}
 /* Main live now-playing banner yields the screen on pointer hover */
 .tvbelow #tvb{transition:opacity .22s ease,transform .22s ease,max-height .22s ease,margin .22s ease;max-height:120px;overflow:hidden}
-.tvx:has(#tvst:hover) .tvbelow #tvb{opacity:0;transform:translateY(-8px);max-height:0;margin-top:0;margin-bottom:0;pointer-events:none}
+.tvx.ns-banner-hidden .tvbelow #tvb{opacity:0;transform:translateY(-8px);max-height:0;margin-top:0;margin-bottom:0;padding-top:0;padding-bottom:0;pointer-events:none}
 /* Remote docks beside the player, or inside the guide while the guide is open */
 #nsrem.ns-docked{position:fixed;left:auto;bottom:auto;z-index:75;width:220px;max-height:min(78vh,760px);border-radius:24px}
 #nsrt.ns-docked{position:fixed;left:auto;bottom:auto;z-index:76}
@@ -2321,14 +2321,14 @@ const css=document.createElement("style");css.textContent=`
 let sel=D.get("sel",2),tickT=0,castConn=null,selAir=null;
 const TVMODE=/Xbox|PlayStation|SmartTV|Tizen|Web0S|WebOS|AFT|Roku|Android TV|GoogleTV/i.test(navigator.userAgent)||/[?&]tv=1/.test(location.search);
 function lockHTML(ch,why){const u=(()=>{try{return me()}catch(e){return null}})();return`<div class="tvslate" style="--h:${ch.hue}"><div><small>${H(ch.name)}</small><br><b>Members channel</b><p>${why==="login"?"Log in to watch this channel.":"This channel is part of a premium package. Pick a package or ask for access."}</p>${u?"":'<a class="btn" href="#login">Log in</a>'}<a class="btn alt" href="#tvplans">See packages</a></div></div>`}
-function player(box,ch,o,unmute){const w=canWatch(ch);let key,id="",html="";
- if(!w.ok){key=ch.n+":lock";if(box.dataset.k===key)return;box.dataset.k=key;box.innerHTML=lockHTML(ch,w.why);return}
- if(o.lv){id=o.lv.id;key=ch.n+":L:"+id}else if(o.cur){id=yid(o.cur.it.yt);key=ch.n+":"+o.cur.slot+":"+o.cur.start}else key=ch.n+":standby:"+(o.next?o.next.start:0);
- key+=":"+(unmute?1:0);if(box.dataset.k===key)return;box.dataset.k=key;
- if(!id){const nx=o.next?`Next: ${H(o.next.title)} at ${fmt(o.next.start)}.`:"Nothing else is scheduled on this channel yet.";box.innerHTML=`<div class="tvslate" style="--h:${ch.hue}"><div><small>${H(ch.name)}</small><br><b>${o.cur?H(o.cur.title):"Standby"}</b><p>${o.cur?"This program has no video attached.":"We'll be right back. "+nx}</p></div></div>`;return}
- const off=o.lv||(o.cur&&o.cur.it.live)?0:Math.max(0,Math.floor((Date.now()-o.cur.start)/1e3)),un=unmute||(D.get("snd",0)&&GEST);
- box.innerHTML=`<iframe src="https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}?autoplay=1&mute=${un?0:1}&start=${off}&rel=0&playsinline=1&enablejsapi=1" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen title="${H(ch.name)}"></iframe><div class="tvld">Tuning to ${H(ch.name)}&hellip;</div>${un?"":'<button class="tvun">&#128266; Tap for sound</button>'}`;
- const fr=Q("iframe",box);if(fr)fr.onload=()=>{const l=Q(".tvld",box);l&&l.remove();try{fr.contentWindow.postMessage(JSON.stringify({event:"listening",id:1,channel:"widget"}),"*")}catch(e){}};const b=Q(".tvun",box);if(b)b.onclick=()=>{D.set("snd",1);box.dataset.k="";player(box,ch,o,true)}}
+function player(box,ch,o,unmute){
+ // The legacy iframe implementation has been removed. The single NorthStar player
+ // is installed by NSPlay and connected through NSX.setPlayer after core setup.
+ if(box._nsp)return;
+ if(box.dataset.legacyPlaceholder)return;
+ box.dataset.legacyPlaceholder="1";
+ box.innerHTML='<div class="tvslate"><div><b>Starting NorthStar Live Player…</b><p>Connecting to the channel schedule.</p></div></div>';
+}
 function banner(ch,o){if(ch.external){const pi=ch.n===22?PL.info:null;return`<span class="tvlg" style="--h:${ch.hue}">${H(ch.n)}</span><span><span class="k">${ch.n===22?"PLUTO TV · NOW PLAYING":"PLUTO TV · OFFICIAL SERVICE"}</span><b style="display:block;font-size:18px">${H(pi?pi.title:ch.name)}</b><small>${H(pi?((pi.ep?pi.ep+" · ":"")+pi.channel+(pi.next?" · Up next: "+pi.next:"")):ch.what||"Open Pluto TV’s official catalog")}</small></span>`}const live=!!o.lv,t=live?(o.lv.title||"Live broadcast"):o.cur?o.cur.title:"Standby";return`<span class="tvlg" style="--h:${ch.hue}">${H(ch.n)}</span><span><span class="k ${live?"r":""}">${live?"LIVE":o.cur?"NOW PLAYING":"STANDBY"}</span><b style="display:block;font-size:18px">${H(t)}</b><small>${H(ch.name)}${o.cur?" &middot; "+fmt(o.cur.start)+"&ndash;"+fmt(o.cur.end):""}${o.next?" &middot; Up next: "+H(o.next.title)+" at "+fmt(o.next.start):""}</small></span>`}
 function details(ch,o){if(ch.external){const pi=ch.n===22?PL.info:null;return`<h3 style="margin-top:0">${H(ch.n)} &middot; ${H(ch.name)}</h3><p class="mute">${H(ch.what||"")}</p>${pi?`<p><b>Playing now on Pluto TV: ${H(pi.title)}</b><br>${H(pi.channel)}${pi.ep?" · "+H(pi.ep):""}${pi.next?"<br>Up next: "+H(pi.next):""}</p>`:ch.n===22?`<p class="mute">Checking Pluto TV’s live guide for the current program…</p>`:`<p class="mute">Browse the ${H(ch.plutoKind||"selected").replace(/-/g," ")} section in Pluto TV’s official catalog. Pluto’s catalog and availability can change.</p>`}<p>Pluto TV content plays on Pluto TV’s own service; NorthStar does not rebroadcast or rehost its streams.</p><p><a class="btn" href="${H(ch.external)}" target="_blank" rel="noopener noreferrer">Open ${H(ch.name)} on Pluto TV</a></p>`}const a=selAir&&selAir.ch===ch.n?selAir.a:(o.cur||o.next),it=a&&a.it;return`<h3 style="margin-top:0">${H(ch.n)} &middot; ${H(ch.name)} ${canWatch(ch).ok?"":'<span class="tvbd">MEMBERS</span>'}</h3><p class="mute">${H(ch.what||"")}</p>${ch.cat==="paid"?'<div class="tvpaid">PAID PROGRAMMING: this channel carries sponsored and advertiser-provided content.</div>':""}${a?`<p><b>${H(a.title)}</b>${it?` <span class="tvbd ${typeLabel(ch,it).split(" ")[0]}">${typeLabel(ch,it)}</span>`:""}<br>${fmt(a.start)}&ndash;${fmt(a.end)} (your time)</p>${it&&it.syn?`<p>${H(it.syn)}</p>`:""}${it&&it.series?`<p class="mute">${H(it.series)}${it.season?" S"+H(it.season):""}${it.ep?" E"+H(it.ep):""}</p>`:""}`:'<p class="mute">Nothing scheduled right now.</p>'}<p class="mute">Next on this channel: ${o.ups.slice(0,4).map(x=>H(x.title)+" "+fmt(x.start)).join(" &middot; ")||"nothing yet"}</p>`}
 /* ---- cable-style guide ---- */
@@ -3088,7 +3088,7 @@ function mount(box,o){
   swap(n){o=n;S.t=0;S.d=0;S.s=-1;S.got=0;t0=Date.now();tries=0;seekAt=0;seeks=0;drift=0;heals=0;badSince=0;ended=false;inst.hl=0;
    box.querySelectorAll(".tverr").forEach(x=>x.remove());q(".nsl").hidden=true;q(".nsc").innerHTML=uiF();q("[data-v]").oninput=e=>setVol(+e.target.value);ifr.title=o.title;
    if(o.id===curId){if(!o.ytlive)cmd("seekTo",[Math.max(0,pos0()),true]);cmd("playVideo")}else{curId=o.id;cmd("loadVideoById",[{videoId:o.id,startSeconds:Math.max(0,Math.floor(pos0()))}])}
-   const me0=o;setTimeout(()=>{if(alive&&box._nsp===inst&&o===me0&&!S.got)ifr.src=url(pos0())},9000);draw();window.__nsWake&&window.__nsWake(6000)}};
+   draw();window.__nsWake&&window.__nsWake(6000)}};
  function draw(){const m=q('[data-a="mute"]'),v=q("[data-v]"),mh=muted?"&#128263; Muted":"&#128266; Sound";if(m&&m.__h!==mh){m.__h=mh;m.innerHTML=mh}const vv=String(muted?0:vs.v);if(v&&v.value!==vv&&document.activeElement!==v)v.value=vv;const pp=q('[data-a="pp"]'),pt=S.s===1?"Pause":"Play";if(pp&&pp.textContent!==pt)pp.textContent=pt}
  const A={chup:()=>chStep(1),chdn:()=>chStep(-1),guide:()=>{const g=document.getElementById("tvgd2");g&&g.click()},mute:inst.mute,pp:inst.toggle,b10:()=>inst.skip(-10),f10:()=>inst.skip(10),rs:inst.restart,prev:inst.prev,next:inst.next,cc:inst.cc,fs:inst.fs,go:()=>{cmd("playVideo");if(!muted)cmd("unMute")}};
  function chStep(d){const L=X.vch().filter(c=>{const n=X.nowOn(c);return n.cur||n.lv}),i=L.findIndex(c=>c.n===o.ch.n);if(L.length)window.__tvGo(L[(i+d+L.length)%L.length].n)}
@@ -3122,16 +3122,18 @@ function key(k){const a=NSP.active;if(!a)return false;const T=["play","ok","pp",
 document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("#nsrem button[data-k]");if(b&&key(b.dataset.k)){e.stopPropagation();e.preventDefault()}},true);
 addEventListener("keydown",e=>{if(!NSP.active||/INPUT|TEXTAREA|SELECT/.test((e.target||{}).tagName))return;const m={ArrowLeft:"left",ArrowRight:"right"," ":"pp",Enter:"ok",m:"mute"}[e.key];if(!m)return;if((e.key===" "||e.key==="Enter")&&/BUTTON|A/.test(e.target.tagName))return;if(key(m)){e.preventDefault();e.stopPropagation()}},true);
 const rem=document.getElementById("nsrem");if(rem){const d=document.createElement("div");d.className="g";d.style.gridTemplateColumns="1fr 1fr";d.innerHTML='<button data-k="prev">&#9198; Prev ep</button><button data-k="next">Next ep &#9197;</button>';rem.insertBefore(d,rem.lastElementChild)}
-/* Live TV: replace the YouTube iframe with the NorthStar player */
+/* LIVE PLAYER: single owner. Reuse the same NorthStar player instance; never layer the legacy iframe over it. */
 X.setPlayer(function(box,ch,o,unmute){
- const kill=()=>{if(box._nsp)box._nsp.destroy();box._nsp=null};
+ const kill=()=>{if(box._nsp){box._nsp.destroy();box._nsp=null}};
  if(!X.canWatch(ch).ok){kill();const k="ns-lock:"+ch.n;if(box.dataset.k!==k){box.dataset.k=k;box.replaceChildren();const d=document.createElement("div");d.className="tvslate";d.style.setProperty("--h",ch.hue||180);const w=document.createElement("div"),sm=document.createElement("small"),b=document.createElement("b"),p=document.createElement("p");sm.textContent=ch.name;b.textContent="Members channel";p.textContent="Sign in with an eligible NorthStar package to watch this channel.";w.append(sm,document.createElement("br"),b,p);d.append(w);box.append(d)}return}
- let id="",ytlive=false;if(o.lv){id=o.lv.id;ytlive=true}else if(o.cur){id=yid(o.cur.it.yt);ytlive=!!(o.cur.it&&o.cur.it.live)}
+ let id="",ytlive=false;if(o.lv){id=o.lv.id;ytlive=true}else if(o.cur){id=yid(o.cur.it&&o.cur.it.yt);ytlive=!!(o.cur.it&&o.cur.it.live)}
  if(!id){kill();const k="ns-standby:"+ch.n+":"+(o.cur?o.cur.slot+":"+o.cur.start:"none")+":"+(o.next?o.next.start:0);if(box.dataset.k!==k){box.dataset.k=k;box.replaceChildren();const d=document.createElement("div");d.className="tvslate";d.style.setProperty("--h",ch.hue||180);const w=document.createElement("div"),sm=document.createElement("small"),b=document.createElement("b"),p=document.createElement("p");sm.textContent=ch.name;b.textContent=o.cur?o.cur.title:"Standby";p.textContent=o.cur?"This program is listed, but its video link is not attached yet.":(o.next?"Next: "+o.next.title:"No program is scheduled yet.");w.append(sm,document.createElement("br"),b,p);d.append(w);box.append(d)}return}
- const key="ns:"+ch.n+":"+(o.lv?"L:"+id:o.cur.slot+":"+o.cur.start+":"+id);
- if(box.dataset.k===key&&box._nsp)return;box.dataset.k=key;
- const c=o.cur,n={mode:"live",id,ytlive,ch,title:c?c.title:(o.lv&&o.lv.title)||ch.name,startMs:c?c.start:(o.lv&&o.lv.t)||Date.now(),endMs:c&&!ytlive?c.end:0,lib:c&&c.it&&c.it.id,unmute:false};
- if(box._nsp&&box._nsp.live&&box.querySelector(".nsp")){box._nsp.swap(n);return}mount(box,n)
+ const c=o.cur,key="ns-single:"+ch.n+":"+(o.lv?"live:"+id:(o.cur.slot+":"+o.cur.start+":"+id));
+ if(box.dataset.k===key&&box._nsp)return;
+ box.dataset.k=key;
+ const n={mode:"live",id,ytlive,ch,title:c?c.title:(o.lv&&o.lv.title)||ch.name,startMs:c?c.start:(o.lv&&o.lv.t)||Date.now(),endMs:c&&!ytlive?c.end:0,lib:c&&c.it&&c.it.id,unmute:false};
+ if(box._nsp&&box._nsp.live&&box.querySelector(".nsp")){box._nsp.swap(n);return}
+ kill();mount(box,n);
 });
 /* NS LIVE PLAYER REBUILD v2: one player owner; guide refreshes never fall back to the legacy iframe. */
 /* the TV page may already have drawn with the old player before this script loaded: switch it over now, once, instead of 8 s later mid-playback */
@@ -3373,6 +3375,36 @@ route=function(){if(TVR.test(cur)&&!window.__tvForce){const st=document.getEleme
   const b=document.querySelector(`#ns-ai-finder [data-nsf-add="${i}"]`);if(b){b.disabled=true;b.textContent="Added for review"}
  }
  const mo=new MutationObserver(mount);mo.observe(document.documentElement,{childList:true,subtree:true});mount();
+})();
+</script>
+
+<script id="northstar-live-interaction-fix">
+(()=>{
+ const attachStage=()=>{
+  const stage=document.getElementById("tvst"),wrap=stage&&stage.closest(".tvx");if(!stage||!wrap||stage.dataset.nsHoverBound)return;
+  stage.dataset.nsHoverBound="1";
+  stage.addEventListener("pointerenter",()=>wrap.classList.add("ns-banner-hidden"));
+  stage.addEventListener("pointerleave",()=>wrap.classList.remove("ns-banner-hidden"));
+  stage.addEventListener("focusin",()=>wrap.classList.add("ns-banner-hidden"));
+  stage.addEventListener("focusout",e=>{if(!stage.contains(e.relatedTarget))wrap.classList.remove("ns-banner-hidden")});
+ };
+ attachStage();
+ new MutationObserver(attachStage).observe(document.body,{childList:true,subtree:true});
+ // Guide clicks are delegated at document level so replacing guide rows during refresh cannot lose the handler.
+ document.addEventListener("click",e=>{
+  const b=e.target&&e.target.closest&&e.target.closest("#tvov .cgc[data-ch],#tvov .cgb[data-ch]");
+  if(!b)return;
+  const c=Number(b.dataset.ch);if(!c||typeof window.__tvTune!=="function")return;
+  e.preventDefault();e.stopImmediatePropagation();
+  let air=null;
+  if(b.dataset.t&&window.NSX){try{const ch=window.NSX.chans().find(x=>x.n===c);if(ch){const a=window.NSX.slots(c).find(x=>String(x.start)===String(b.dataset.t));if(a)air=a}}catch(_){}}
+  window.__tvTune(c,air);
+  const close=document.getElementById("tvcl");if(close)close.click();
+ },true);
+ // Keep the current guide and channel state responsive to navigation without requiring a browser refresh.
+ window.addEventListener("hashchange",()=>{if(/^#(tv|channels|tvguide|live|broadcast)/.test(location.hash)&&typeof window.__tvTune==="function"){
+  const m=location.hash.match(/^#(?:tv|channels|tvguide|live|broadcast)\/(\d+)/);if(m)window.__tvTune(Number(m[1]));
+ }});
 })();
 </script>
 </body>
