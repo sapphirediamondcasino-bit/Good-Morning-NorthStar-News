@@ -530,7 +530,8 @@ function chrome(){$("#tick").innerHTML=`<div class="tl"><i></i>LATEST</div><div 
  $("#wl").innerHTML='<a class="btn" href="#plans">Subscribe</a><a href="#live">Live</a><input id="sq" type="search" placeholder="Search shows, movies, news" aria-label="Search" style="width:200px;margin:0;padding:6px 10px">';const sq=$("#sq");sq.onkeydown=e=>{if(e.key==="Enter"&&sq.value.trim())go("search/"+encodeURIComponent(sq.value.trim()))};$("#nav").innerHTML=PAGES.map(x=>`<a href="#${x}" class="${(ON[p]||p)===x?"on":""}">${NAVL[x]||x[0].toUpperCase()+x.slice(1)}</a>`).join("")+(isAdmin(u)?`<a href="#admin" class="${p==="admin"?"on":""}">Admin</a>`:"");
  $("#who").innerHTML=u?`<a href="#profile" data-testid="nav-account">Account</a><a href="#" id="out" data-testid="nav-logout">Log out</a>`:`<a href="#login" data-testid="nav-login">Login</a><a class="btn alt" href="#login/register" data-testid="nav-register">Create account</a>`;
  const o=$("#out");if(o)o.onclick=e=>{e.preventDefault();session=null;DB.set("session",null);go("home");route()}}
-function route(){chrome();const [p,arg]=cur.split("/");const f=V[p]||V.home;$("#app").innerHTML="";f(arg,$("#app"));hydrate($("#app"));hydrateWiki($("#app"));availLoad($("#app"));ratingsInto($("#app"));window.scrollTo(0,0)}
+window.__tvBoot=true;/* TV pages are drawn once, after the real NorthStar player is registered (see NSPlay), so no temporary player is ever shown */
+function route(){chrome();const [p,arg]=cur.split("/");if(window.__tvBoot&&/^(tv|channels|tvguide|live|broadcast)$/.test(p))return;const f=V[p]||V.home;$("#app").innerHTML="";f(arg,$("#app"));hydrate($("#app"));hydrateWiki($("#app"));availLoad($("#app"));ratingsInto($("#app"));window.scrollTo(0,0)}
 addEventListener("error",e=>say("Something went wrong: "+(e.message||"unknown error")));addEventListener("hashchange",()=>{cur=location.hash.slice(1)||"home";route()});addEventListener("popstate",()=>{cur=location.hash.slice(1)||"home";route()});
 document.addEventListener("click",e=>{const a=e.target.closest&&e.target.closest('a[href^="#"]');if(!a)return;const h=a.getAttribute("href").slice(1);e.preventDefault();if(h)go(h)});
 const live=()=>posts.filter(p=>p.status==="live").sort((a,b)=>b.at-a.at);
@@ -3100,13 +3101,8 @@ function mount(box,o){
   draw();
   if(S.d>0&&o.lib&&!o.ytlive&&!inst.hl){inst.hl=1;try{const m=X.D.get("rtseen",{});if(m[o.lib]!==S.d){m[o.lib]=S.d;X.D.set("rtseen",m)}}catch(e){}}
   if(live){if(o.endMs){const el=(Date.now()-o.startMs)/1e3,tot=(o.endMs-o.startMs)/1e3;q("[data-p]").style.width=Math.min(100,el/tot*100)+"%";q("[data-e]").textContent=tf(el);q("[data-r]").textContent="-"+tf(tot-el)}
-   if(S.got&&Date.now()-lastP>1000){lastP=Date.now();const now=Date.now();
-    /* Resume only if the player stays stopped for 2.5s, at most once per 5s: a brief state change must not trigger YouTube's pause screen. */
-    if(S.s===1||S.s===3)badSince=0;else if(S.s===2||((S.s===5||S.s===-1)&&now-t0<20000)){if(!badSince)badSince=now;if(now-badSince>4000&&now-lastPlay>10000&&heals<3){lastPlay=now;heals++;cmd("playVideo")}}else badSince=0;
-    /* Re-sync to the schedule only after 3 checks in a row are >8s off, while really playing, never when the duration looks like an ad, max once per 30s, and stop after 3 failed tries. */
-    if(!o.ytlive&&o.startMs&&S.s===1&&now-t0<60000&&now-seekAt>120000&&seeks<2){const ex=expected(),sched=o.endMs?(o.endMs-o.startMs)/1e3:0,adLike=!!(S.d&&sched&&S.d<sched*.5);
-     if(!adLike&&Math.abs(S.t-ex)>25&&(!S.d||ex<S.d-1)){if(++drift>=5){drift=0;seekAt=now;seeks++;cmd("seekTo",[ex,true])}}else drift=0}
-    }}
+   /* Live playback is never resumed, paused-recovered or re-seeked automatically: once it is playing, nothing touches it. */
+  }
   else{const d=S.d||o.dur||0;q("[data-p]").style.width=d?Math.min(100,S.t/d*100)+"%":"0";q("[data-e]").textContent=tf(S.t);q("[data-r]").textContent="-"+tf(d-S.t);
    if(S.got&&Date.now()-lastP>5000&&S.t>0){lastP=Date.now();o.onProgress&&o.onProgress(S.t,S.d)}
    if(S.s===0&&!ended){ended=true;o.onEnd&&o.onEnd(S.d)}if(S.s!==0)ended=false}},250);
@@ -3133,8 +3129,8 @@ X.setPlayer(function(box,ch,o,unmute){
  kill();mount(box,n);
 });
 /* NS LIVE PLAYER REBUILD v2: one player owner; guide refreshes never fall back to the legacy iframe. */
-/* the TV page may already have drawn with the old player before this script loaded: switch it over now, once, instead of 8 s later mid-playback */
-try{const bx=document.getElementById("tvp");if(bx&&bx.isConnected&&!bx._nsp&&bx.querySelector("iframe")&&typeof window.__tvTune==="function"){bx.dataset.k="";window.__tvTune(+((location.hash.match(/^#tv\/(\d+)/)||[])[1])||X.D.get("sel",2))}}catch(e){}
+/* The real player is registered, so the held TV page can now draw for the first time, directly with this player. */
+try{window.__tvBoot=false;if(/^(tv|channels|tvguide|live|broadcast)(\/|$)/.test(cur)&&!document.getElementById("tvst"))route()}catch(e){}
 })();
 </script>
 <script>
@@ -3425,6 +3421,10 @@ function sweep(){const st=document.getElementById("tvst");if(!st)return;const bo
  document.querySelectorAll("#app .bcs,#app .bcyw").forEach(n=>{if(document.getElementById("tvst")){n.remove();D.strays++;NSDIAGnote("removed the old live player")}})}
 let t=0;new MutationObserver(()=>{clearTimeout(t);t=setTimeout(sweep,60)}).observe(document.body,{childList:true,subtree:true});sweep();NSDIAGnote("one-player guard on");
 })();
+</script>
+<script id="ns-tv-boot-release">
+/* Failsafe: if the player module did not register for any reason, release the held TV page so it still draws instead of staying blank. */
+(()=>{if(!window.__tvBoot)return;window.__tvBoot=false;try{if(/^(tv|channels|tvguide|live|broadcast)(\/|$)/.test(cur)&&!document.getElementById("tvst"))route()}catch(e){}})();
 </script>
 </body>
 </html>
