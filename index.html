@@ -3298,7 +3298,7 @@ const de=document.documentElement,css=document.createElement("style");css.textCo
 html.nswatch.nsidle #bcdock{opacity:0;transform:translateY(110%);pointer-events:none}html.nswatch.nsidle #nsrt{opacity:0;pointer-events:none}html.nswatch.nsidle .tvctl{opacity:0!important;pointer-events:none}
 :fullscreen .nsp,.nsp:fullscreen{height:100%}:fullscreen .nsp .nsv,.nsp:fullscreen .nsv{flex:1;aspect-ratio:auto}:fullscreen .nsp .nsc,.nsp:fullscreen .nsc{position:absolute;left:0;right:0;bottom:0;z-index:4;background:linear-gradient(transparent,rgba(5,8,10,.92) 35%);border-top:0;padding-top:28px}
 html.nsidle :fullscreen .nsp .nsc,html.nsidle .nsp:fullscreen .nsc{opacity:0;pointer-events:none}html.nsidle :fullscreen{cursor:none}#tvpz{display:none!important}`;document.head.appendChild(css);
-const W=/^#(tv|channels|tvguide|live|broadcast|odwatch)(\/|$)/;let it=0;
+const W=/^#(odwatch)(\/|$)/;let it=0;
 function wake(ms){if(!W.test(location.hash)&&!document.fullscreenElement){de.classList.remove("nswatch","nsidle");return}de.classList.add("nswatch");de.classList.remove("nsidle");clearTimeout(it);it=setTimeout(()=>{const r=document.getElementById("nsrem"),g=document.querySelector("#tvov:not([hidden])"),p=document.querySelector("#tvpi:not([hidden])");if((r&&!r.hidden)||g||p)return wake(4000);de.classList.add("nsidle")},ms||4000)}
 window.__nsWake=wake;let mvT=0;
 ["mousemove","pointerdown","keydown","touchstart"].forEach(t=>addEventListener(t,()=>{if(!de.classList.contains("nswatch"))return;const n=Date.now();if(t==="mousemove"&&n-mvT<250&&!de.classList.contains("nsidle"))return;mvT=n;wake(4000)},{passive:true,capture:true}));
@@ -3401,11 +3401,14 @@ route=function(){if(TVR.test(cur)&&!window.__tvForce){const st=document.getEleme
 })();
 </script>
 <style id="ns-live-fix">
-/* NorthStar live player: the video area is fixed to the stage and never changes size. Controls float over it. */
-.tvstage .tvscr .nsp.live{position:absolute;inset:0;display:block;height:100%;min-height:0;background:#000}
-.tvstage .tvscr .nsp.live .nsv{position:absolute;inset:0;flex:none;height:100%;min-height:0;aspect-ratio:auto}
-.tvstage .tvscr .nsp.live .nsc{position:absolute;left:0;right:0;bottom:0;z-index:5;border-top:0;padding:30px 14px 10px;background:linear-gradient(transparent,rgba(3,6,8,.92) 45%);opacity:0;visibility:hidden;transition:none}
-html.nswatch:not(.nsidle) .tvstage .tvscr .nsp.live .nsc,.tvstage .tvscr .nsp.live:focus-within .nsc{opacity:1;visibility:visible}
+/* Live uses the same layout as On-Demand: video on top, controls underneath, always visible, nothing fades or floats over the video. */
+.tvstage{aspect-ratio:auto!important;overflow:visible!important;background:transparent!important}
+.tvstage .tvscr{position:relative!important;inset:auto!important;aspect-ratio:auto!important;border-radius:0!important}
+.tvstage .tvscr:not(:has(.nsp)){aspect-ratio:16/9!important}
+.tvstage .tvscr .nsp.live{position:relative;display:flex;flex-direction:column;height:auto;min-height:0}
+.tvstage .tvscr .nsp.live .nsv{position:relative;flex:none;aspect-ratio:16/9;height:auto}
+.tvstage .tvscr .nsp.live .nsc{position:static!important;opacity:1!important;visibility:visible!important;transition:none!important;padding:8px 12px 10px;background:linear-gradient(#0b2a33,#071d24);border-top:2px solid #d4af37}
+.tvctl,.tvbug{display:none!important}
 html.tvlive #bcdock{display:none!important}html.tvlive.bcpad body,html.tvlive.bcpad.bcmin body{padding-bottom:0!important}
 #nsbar{display:none!important}
 </style>
