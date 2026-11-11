@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.paypal.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; frame-src https:; img-src 'self' data: https:; connect-src 'self' https://api.weather.gov https://api.emailjs.com https://www.theaudiodb.com https://www.googleapis.com https://www.omdbapi.com https://api.gdeltproject.org https://api.themoviedb.org https://en.wikipedia.org https://api.tvmaze.com https://www.youtube.com https://www.paypal.com https://*.paypal.com https://api.open-meteo.com https://geocoding-api.open-meteo.com https://boot.pluto.tv https://service-channels.clusters.pluto.tv https://api.piped.private.coffee https://pipedapi.kavin.rocks https://pipedapi.leptons.xyz https://pipedapi.nosebs.ru https://pipedapi.reallyaweso.me https://piped-api.lunar.icu; media-src 'self' https: blob:; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.paypal.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; frame-src https:; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co https://api.weather.gov https://api.emailjs.com https://www.theaudiodb.com https://www.googleapis.com https://www.omdbapi.com https://api.gdeltproject.org https://api.themoviedb.org https://en.wikipedia.org https://api.tvmaze.com https://www.youtube.com https://www.paypal.com https://*.paypal.com https://api.open-meteo.com https://geocoding-api.open-meteo.com https://boot.pluto.tv https://service-channels.clusters.pluto.tv https://api.piped.private.coffee https://pipedapi.kavin.rocks https://pipedapi.leptons.xyz https://pipedapi.nosebs.ru https://pipedapi.reallyaweso.me https://piped-api.lunar.icu; media-src 'self' https: blob:; upgrade-insecure-requests">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>Good Morning Northstar News</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -128,33 +128,52 @@ footer{padding:0!important;background:#100e18!important;border-top:4px solid var
 <script>document.getElementById("hlogo").src=window.GLOGO;</script>
 <script id="ns-sb-config" type="application/json">{"url":"https://yigvhogrnieaipjuaftn.supabase.co","anon":""}</script>
 <script id="ns-supabase">
-/* NorthStar shared store (Supabase REST). Visitors READ with the public anon key. Only a signed-in Supabase admin can WRITE (row-level security).
-   The Postgres password is never used in the browser and must never be put in this file. */
+/* NorthStar shared store (Supabase REST + Auth). Visitors READ with the public anon key. Only a signed-in Supabase admin
+   (listed in public.ns_admins, checked by public.ns_is_admin()) can WRITE: row-level security enforces this on the server.
+   The Postgres password and the service_role key are never used in the browser and must never be put in this file.
+   Tables: ns_lineup(id,snapshot,updated_at)  ns_live(id,live,updated_at)  ns_streaming(id,data,updated_at); every row id is 'main'. */
 (function(){"use strict";
 const KEY="ns_sb_cfg_local",JWT="ns_sb_jwt";
 const baked=()=>{try{return JSON.parse(document.getElementById("ns-sb-config").textContent)||{}}catch(e){return{}}};
 const local=()=>{try{return JSON.parse(localStorage.getItem(KEY)||"{}")||{}}catch(e){return{}}};
 function cfg(){const b=baked(),l=local(),url=String(l.url||b.url||"").trim().replace(/\/+$/,""),anon=String(l.anon||b.anon||"").trim();return{url,anon,ok:/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(url)&&anon.length>20}}
 function saveCfg(o){try{localStorage.setItem(KEY,JSON.stringify({url:String(o.url||"").trim(),anon:String(o.anon||"").trim()}))}catch(e){}}
-function jwt(){try{const j=JSON.parse(sessionStorage.getItem(JWT)||"null");if(j&&j.exp>Date.now()+3e4)return j.token}catch(e){}return""}
-function who(){try{const j=JSON.parse(sessionStorage.getItem(JWT)||"null");return j&&j.email||""}catch(e){return""}}
+const sess=()=>{try{return JSON.parse(sessionStorage.getItem(JWT)||"null")}catch(e){return null}};
+const putSess=o=>{try{sessionStorage.setItem(JWT,JSON.stringify(o))}catch(e){}};
+function jwt(){const j=sess();return j&&j.token&&j.exp>Date.now()+3e4?j.token:""}
+function who(){const j=sess();return j&&j.email||""}
+let refreshing=null;
+/* renew the admin token shortly before it expires, so a long editing session does not silently stop publishing */
+async function ensure(){const j=sess(),c=cfg();if(!j||!j.refresh||!c.ok)return;if(j.exp>Date.now()+120e3)return;
+ if(refreshing)return refreshing;
+ refreshing=(async()=>{try{const r=await fetch(c.url+"/auth/v1/token?grant_type=refresh_token",{method:"POST",headers:{apikey:c.anon,"Content-Type":"application/json"},body:JSON.stringify({refresh_token:j.refresh})});
+  const k=await r.json().catch(()=>({}));if(r.ok&&k.access_token)putSess({token:k.access_token,refresh:k.refresh_token||j.refresh,exp:Date.now()+(k.expires_in||3600)*1e3,email:j.email});}catch(e){}finally{refreshing=null}})();return refreshing}
 async function req(path,o){const c=cfg();if(!c.ok)throw new Error("Supabase is not set up (needs the project URL and the anon key).");o=o||{};
+ if(o.auth)await ensure();
  const h=Object.assign({apikey:c.anon,Authorization:"Bearer "+(o.auth?(jwt()||c.anon):c.anon)},o.headers||{});if(o.body!==undefined)h["Content-Type"]="application/json";
  const ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),o.timeout||12000);
  try{const r=await fetch(c.url+path,{method:o.method||"GET",headers:h,body:o.body===undefined?undefined:JSON.stringify(o.body),cache:"no-store",signal:ctl.signal});
   const txt=await r.text();let j=null;try{j=txt?JSON.parse(txt):null}catch(e){}
-  if(!r.ok)throw Object.assign(new Error((j&&(j.message||j.msg||j.error_description||j.hint))||("HTTP "+r.status)),{status:r.status});return j}
+  if(!r.ok)throw Object.assign(new Error((j&&(j.message||j.msg||j.error_description||j.hint))||("HTTP "+r.status)),{status:r.status,code:j&&j.code});return j}
  catch(e){if(e.name==="AbortError")throw new Error("Supabase did not answer in time.");throw e}finally{clearTimeout(tm)}}
-async function read(table,col){const j=await req("/rest/v1/"+table+"?id=eq.main&select="+col+",updated_at");return j&&j[0]||null}
-async function write(table,col,val){if(!jwt())throw new Error("Sign in as the Supabase admin first (Admin > Network settings).");
+/* opt.auth:true reads with the admin token (needed for admin-only tables such as ns_streaming) */
+async function read(table,col,opt){opt=opt||{};const j=await req("/rest/v1/"+table+"?id=eq.main&select="+col+",updated_at",{auth:!!opt.auth});return j&&j[0]||null}
+async function write(table,col,val){await ensure();if(!jwt())throw new Error("Sign in as the Supabase admin first (Admin > Network settings).");
  const row={id:"main",updated_at:new Date().toISOString()};row[col]=val;
  const j=await req("/rest/v1/"+table+"?on_conflict=id",{method:"POST",auth:1,headers:{Prefer:"resolution=merge-duplicates,return=representation"},body:row,timeout:45000});
  if(!Array.isArray(j)||!j.length)throw new Error("Supabase returned no row, so the write was not confirmed. Check the row-level-security policies from the SQL file.");return j[0]}
+/* asks the database itself (public.ns_is_admin()) whether the signed-in account is allowed to publish */
+async function isAdmin(){try{const r=await req("/rest/v1/rpc/ns_is_admin",{method:"POST",auth:1,body:{}});return r===true}catch(e){if(e.status===404)throw new Error("The function public.ns_is_admin() was not found. Run northstar_supabase_setup.sql in the Supabase SQL editor.");throw e}}
 async function signIn(email,pw){const c=cfg();if(!c.ok)throw new Error("Enter the project URL and anon key first.");
  const r=await fetch(c.url+"/auth/v1/token?grant_type=password",{method:"POST",headers:{apikey:c.anon,"Content-Type":"application/json"},body:JSON.stringify({email,password:pw})});
  const j=await r.json().catch(()=>({}));if(!r.ok||!j.access_token)throw new Error(j.error_description||j.msg||j.message||("Sign-in failed ("+r.status+")"));
- sessionStorage.setItem(JWT,JSON.stringify({token:j.access_token,exp:Date.now()+(j.expires_in||3600)*1e3,email}));return true}
-window.NSSB={cfg,saveCfg,jwt,who,read,write,signIn,signOut(){try{sessionStorage.removeItem(JWT)}catch(e){}}};
+ putSess({token:j.access_token,refresh:j.refresh_token||"",exp:Date.now()+(j.expires_in||3600)*1e3,email});
+ let ok=false;try{ok=await isAdmin()}catch(e){signOut();throw e}
+ if(!ok){signOut();throw new Error("Signed in, but "+email+" is not on the ns_admins allow-list, so it cannot publish. Insert that email into public.ns_admins (see the setup instructions).")}
+ return true}
+function signOut(){try{sessionStorage.removeItem(JWT)}catch(e){}}
+setInterval(()=>{if(sess())ensure()},60e3);
+window.NSSB={cfg,saveCfg,jwt,who,read,write,signIn,signOut,isAdmin,ensure,req};
 })();
 </script>
 
@@ -2126,7 +2145,7 @@ const CATN={mn:"Minnesota",actor:"Actors & Crews",retro:"Decades & Genres",theme
 const TYPES={show:"TV series",episode:"TV episode",movie:"Movie",special:"Special",music:"Music",trailer:"Trailer",intro:"Intro / bumper",sponsored:"Paid programming",commercial:"Commercial"};
 const RIGHTS={owned:"I own it",licensed:"Licensed to us",public:"Public domain",embed:"Uploader allows embedding",pending:"Rights not confirmed yet"};
 const OKT=ch=>ch.cat==="paid"?["sponsored","commercial","special","trailer","intro","show","episode","movie","music"]:ch.cat==="movie"||ch.cat==="holiday"?["movie","special","trailer","intro"]:["show","episode","movie","special","music","trailer","intro"];
-const allowed=(ch,t)=>OKT(ch).includes(t);
+const allowed=(ch,t)=>!!t;/* manual scheduling: any content type on any channel (the old per-category type list is no longer enforced) */
 const schedulable=x=>x&&!x.adOff&&x.rights&&x.rights!=="pending"&&(+x.dur>0)&&!x.est&&!x.bad&&yid(x.yt)&&(!x.fake||x.okreal)&&(!x.rterr||x.rtv);
 const TIERS0=[{id:0,name:"Free",price:0,perks:"All free channels. No login needed to watch."},{id:1,name:"Plus",price:5,perks:"Plus premium channels and a premium badge."},{id:2,name:"Premier",price:10,perks:"Everything in Plus, plus Premier channels and early looks."},{id:3,name:"Elite",price:15,perks:"Everything in Premier, plus Elite channels and exclusive premieres."},{id:4,name:"Ultimate",price:20,perks:"Everything in Elite, plus Ultimate channels and priority features. HD and higher quality will be offered here when available."}];
 const tiers=()=>D.get("tiers",TIERS0);
@@ -2147,7 +2166,7 @@ const SEEDM={};SEED.forEach(c=>{SEEDM[c.n]=c});
 function upgradeLineup(c){SEED.forEach(sd=>{const i=c.findIndex(y=>y.n===sd.n);if(i<0){c.push(Object.assign({},sd));return}if(FORCE.includes(sd.n)){const o=c[i];c[i]=Object.assign({},sd,{on:o.on!==false})}else{const x=c[i];if(x.m===undefined){x.m=sd.m;if(sd.kinds)x.kinds=sd.kinds}if(x.auto===undefined)x.auto=true}});
  for(let i=c.length-1;i>=0;i--){if(GONE.includes(c[i].n)&&!SEEDM[c[i].n]&&!D.get("sl_"+c[i].n,[]).length)c.splice(i,1)}return c}
 const chansBase=()=>{if(PUB&&Array.isArray(PUB.channels)&&!isAd()){let c=PUB.channels.slice();SEED.forEach(sd=>{const i=c.findIndex(x=>x.n===sd.n);if(i<0)c.push(Object.assign({},sd));else if(FORCE.includes(sd.n)){const o=c[i];c[i]=Object.assign({},sd,{on:o.on!==false})}});return c.sort((a,b)=>a.n-b.n)}let c=D.get("channels",null);if(!Array.isArray(c)){c=SEED.map(x=>Object.assign({},x));D.set("channels",c);D.set("lv",6)}else if(D.get("lv",0)<7){upgradeLineup(c);D.set("channels",c);D.set("lv",7)}return c.slice().sort((a,b)=>a.n-b.n)};
-const chans=()=>{const L=chansBase(),P=DB.get("plutoCh",[]);if(!Array.isArray(P)||!P.length)return L;const out=L.map(c=>{const p=P.find(x=>x.n===c.n&&x.slug);return p&&!c.external?Object.assign({},c,{external:"https://pluto.tv/en/live-tv/"+p.slug,plutoKind:"live"}):c});P.forEach(p=>{if(p.n&&p.slug&&!out.some(c=>c.n===p.n))out.push({n:p.n,name:p.name||("Pluto "+p.n),cat:"themed",what:"Pluto TV live channel",hue:(p.n*37)%360,on:true,acc:"free",tier:0,own:"",m:[],kinds:null,ex:[],mv:false,auto:false,external:"https://pluto.tv/en/live-tv/"+p.slug,plutoKind:"live",pluto:1})});return out.sort((a,b)=>a.n-b.n)};
+const chans=()=>{const L=chansBase(),P0=DB.get("plutoCh",[]),P=Array.isArray(P0)?P0.filter(x=>x&&x.on!==false):[];if(!P.length)return L;const out=L.map(c=>{const p=P.find(x=>x.n===c.n&&x.slug);return p&&!c.external?Object.assign({},c,{external:"https://pluto.tv/en/live-tv/"+p.slug,plutoKind:"live"}):c});P.forEach(p=>{if(p.n&&p.slug&&!out.some(c=>c.n===p.n))out.push({n:p.n,name:p.name||("Pluto "+p.n),cat:"themed",what:"Pluto TV live channel",hue:(p.n*37)%360,on:true,acc:"free",tier:0,own:"",m:[],kinds:null,ex:[],mv:false,auto:false,external:"https://pluto.tv/en/live-tv/"+p.slug,plutoKind:"live",pluto:1})});return out.sort((a,b)=>a.n-b.n)};
 const vch=()=>chans().filter(c=>c.on&&(c.external||!c.gen||poolOf(c).length||slots(c.n).length));
 const lib=()=>{if(PUB&&Array.isArray(PUB.library)&&!isAd())return PUB.library;const n=Date.now();if(LC.v&&n-LC.t<1500)return LC.v;LC.v=D.get("lib",[]);LC.t=n;return LC.v};const saveLib=l=>{LC.v=null;D.set("lib",l)};
 const slots=n=>PUB&&PUB.schedules&&!isAd()?(PUB.schedules[n]||[]):D.get("sl_"+n,[]);const saveSl=(n,s)=>D.set("sl_"+n,s);
@@ -2158,7 +2177,7 @@ function migrate(){if(D.get("mig",0))return;D.set("mig",1);try{const ol=OLD("lib
 function liveOn(){try{const l=DB.get("bc_live",{on:false});if(l&&l.on&&l.id)return l;const ev=(DB.get("live",[])||[]).find(e=>e.onair&&yid(e.yt));return ev?{on:true,id:yid(ev.yt),title:ev.title,t:Date.now()}:null}catch(e){return null}}
 /* ---- timeline: expand each channel's own slots, independent of every other channel ---- */
 function rawM(ch,a,b){const L=lib(),S=slots(ch.n),out=[],d0=addDays(ymdCT(a),-1),d1=addDays(ymdCT(b),1);
- S.forEach(s=>{const it=L.find(x=>x.id===s.lib);if(!it||!schedulable(it)||!(allowed(ch,it.type)||(s.brk&&it.type==="commercial")))return;if(Array.isArray(it.chs)&&it.chs.length&&!it.chs.includes(ch.n))return;const dur=Math.max(1,+it.dur||+s.dur||0);
+ S.forEach(s=>{const it=L.find(x=>x.id===s.lib);if(!it||!schedulable(it)||!(allowed(ch,it.type)||(s.brk&&it.type==="commercial")))return;if(it.type==="commercial"&&Array.isArray(it.chs)&&it.chs.length&&!it.chs.includes(ch.n))return;const dur=Math.max(1,+it.dur||+s.dur||0);
   for(let d=s.rep==="none"||!s.rep?s.d:(d0>s.d?d0:s.d);d<=d1;d=addDays(d,1)){if(s.rep==="none"||!s.rep){if(d!==s.d)break}else{if(s.until&&d>s.until)break;const w=dow(d);if(s.rep==="weekdays"&&(w===0||w===6))continue;if(s.rep==="weekends"&&w!==0&&w!==6)continue;if(s.rep==="weekly"&&w!==dow(s.d))continue}
    const st=toUTC(d,s.t),en=st+dur*MIN;if(en>a&&st<b)out.push({slot:s.id,it,title:it.title,start:st,end:en,ai:!!s.ai});if(s.rep==="none"||!s.rep)break}});
  return out}
@@ -2175,7 +2194,7 @@ const hayN=x=>{let h=HC.get(x);if(!h){h=norm((x.tags||"")+" "+(x.series||"")+" "
 const ruleHit=(ch,x)=>{const h=hayN(x);if((ch.ex||[]).some(t=>h.includes(norm(t))))return false;return(ch.m||[]).some(g=>g.length&&g.every(t=>h.includes(norm(t))))};
 const belongs=(ch,x)=>Array.isArray(x.chs)&&x.chs.length?x.chs.includes(ch.n):ch.mv&&x.type==="movie"?true:ruleHit(ch,x);
 const kindsOf=ch=>ch.kinds||(ch.cat==="paid"?["sponsored","commercial"]:["show","episode","movie","special","music"]);
-const poolOf=ch=>{const K=kindsOf(ch);return lib().filter(x=>K.includes(x.type)&&schedulable(x)&&allowed(ch,x.type)&&belongs(ch,x)&&x.src!=="event").sort((a,b)=>String(a.id).localeCompare(String(b.id)))};
+const poolOf=ch=>{const K=kindsOf(ch);return lib().filter(x=>K.includes(x.type)&&schedulable(x)&&belongs(ch,x)&&x.src!=="event").sort((a,b)=>String(a.id).localeCompare(String(b.id)))};
 const isSeq=P=>P.length>1&&P.filter(x=>x.series).length/P.length>=.7;
 const seqOrd=(a,b)=>String(a.series||"").localeCompare(String(b.series||""))||(+a.season||0)-(+b.season||0)||(+a.ep||0)-(+b.ep||0)||String(a.title).localeCompare(String(b.title));
 const AC=new Map();
@@ -2215,7 +2234,7 @@ function canWatch(ch){if(!ch)return{ok:true};if(ch.n===2)return{ok:true};let u=n
  if(paidU(u))return{ok:true};
  if(u&&((ch.own&&(ch.own===u.id||String(ch.own).toLowerCase()===String(u.email).toLowerCase()))||(u.tvg||[]).includes(ch.n)))return{ok:true};
  if(ch.acc==="login")return u?{ok:true}:{ok:false,why:"login"};
- if(ch.n<=150&&!ch.paidOnly)return{ok:true};
+ if(ch.n<=150)return{ok:true};/* free tier = channels 1-150 regardless of stale paidOnly/premium flags in older snapshots */
  return{ok:false,why:u?"tier":"login"}}
 const adFree=()=>{let u=null;try{u=me()}catch(e){}return paidU(u)&&!isAd()};
 const adSkip=(ch,o)=>adFree()&&ch.cat!=="paid"&&!!(o&&o.cur&&o.cur.it&&o.cur.it.type==="commercial")&&!o.lv;
@@ -2577,7 +2596,7 @@ V.pitch=function(a,el){const C=chans().filter(c=>c.on&&c.n!==2&&c.cat!=="paid");
   if(!sent&&window.__emReady&&window.__emReady()){const r=await window.__sendMail({to:CFG.CONTACT,subject:"[Programming submission] "+sub.title,message:body,name:sub.company,reply:sub.contact.includes("@")?sub.contact:CFG.CONTACT});sent=!!r.ok}
   if(sent){st.textContent="Thank you. Your submission is in our review queue. Nothing airs until it is approved.";f.reset()}else{st.innerHTML='Your submission is saved. To make sure our team gets it, <a href="'+H("mailto:"+CFG.CONTACT+"?subject="+encodeURIComponent("[Programming submission] "+sub.title)+"&body="+encodeURIComponent(body))+'">send it by email</a>.'}}};
 /* ---- public: packages ---- */
-V.tvplans=function(a,el){let u=null;try{u=me()}catch(e){}const T=tiers(),cur=tierOf(u),C=chans().filter(c=>c.on&&(c.n>150||c.paidOnly));
+V.tvplans=function(a,el){let u=null;try{u=me()}catch(e){}const T=tiers(),cur=tierOf(u),C=chans().filter(c=>c.on&&c.n>150);
  el.innerHTML=`<div class="tvw" data-testid="tv-plans"><h1 style="font:800 clamp(28px,5vw,46px) Newsreader,serif;margin:0">NorthStar TV packages</h1><p class="mute">Every free channel stays free, with no login and no payment. Packages unlock premium channels, and each package includes everything in the one before it.${u?` You are on: <b>${H((T.find(t=>t.id===cur)||T[0]).name)}</b>${u.tvEnd?" until "+new Date(u.tvEnd).toLocaleDateString():""}.`:" <a href='#login'>Log in</a> to subscribe."}</p><div class="grid">${T.map(t=>`<div class="card" data-testid="tv-tier-${t.id}"><h3 style="margin-top:0">${H(t.name)}</h3><p style="font-size:28px;margin:0"><b>${t.price?"$"+t.price:"Free"}</b>${t.price?'<span class="mute">/month</span>':""}</p><p>${H(t.perks)}</p>${C.filter(c=>c.tier===t.id).map(c=>`<div class="mute">${c.n} ${H(c.name)}</div>`).join("")}${t.price?`<button class="btn" data-tier="${t.id}">${cur>=t.id?"Included":"Choose "+H(t.name)}</button>`:""}</div>`).join("")}</div><p class="mute">Paid packages are confirmed by our team after payment. If you cannot afford a package, you can ask us for access from the Contact page.</p><p><a class="btn alt" href="#tv">Back to NorthStar TV</a></p></div>`;
  QA("[data-tier]",el).forEach(b=>b.onclick=()=>{const t=T.find(x=>x.id===+b.dataset.tier);if(!u){say("Log in first.");location.hash="#login";return}if(typeof ppRun!=="function")return say("Payments are not available right now.");ppRun("NorthStar TV "+t.name+" (30 days)",t.price,()=>{u.tvt=t.id;u.tvEnd=Date.now()+30*864e5;save();say(t.name+" package active.");route()})})};
 /* ---- banners and mini guide stay in sync with the same engine ---- */
@@ -2617,13 +2636,14 @@ wrapV("weather",(a,el)=>{el.insertAdjacentHTML("beforeend",`<section class="tvw"
 const NSS=(()=>{
  const okS=j=>j&&Array.isArray(j.channels)&&Array.isArray(j.library);
  const adm=()=>{try{return sessionStorage.getItem("gmn_admin")||""}catch(e){return""}};
- const snap=()=>{const C2=chans(),L=lib().map(x=>{const y=Object.assign({},x);delete y.imp;return y});return{v:2,at:Date.now(),dvrmode:D.get("dvrmode","all"),channels:C2,library:L,schedules:Object.fromEntries(C2.map(c=>[c.n,slots(c.n)])),od_tier:DB.get("od_tier",{}),tiers:tiers(),bc_sched:DB.get("bc_sched",null),pluto:DB.get("plutoCh",null)}};
+ const snap=()=>{const C2=chans(),L=lib().map(x=>{const y=Object.assign({},x);delete y.imp;return y});return{v:2,at:Date.now(),dvrmode:D.get("dvrmode","all"),channels:C2,library:L,schedules:Object.fromEntries(C2.map(c=>[c.n,slots(c.n)])),od_tier:DB.get("od_tier",{}),tiers:tiers(),bc_sched:DB.get("bc_sched",null),pluto:DB.get("plutoCh",null),adpl:DB.get("ns_adpl",null)}};
  const mine=()=>{const o={};try{Object.keys(localStorage).filter(k=>k.indexOf("gan_tv2_")===0).forEach(k=>o[k]=localStorage.getItem(k))}catch(e){}return o};
  const dl=(name,text,type)=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([text],{type:type||"application/json"}));a.download=name;a.click()};
  let timer=0;
  function backup(){try{const o=mine(),j=JSON.stringify(o);if(!Object.keys(o).length||j.length>1500000)return;const sig=j.length+":"+Object.keys(o).length;if(localStorage.getItem("gan_bk_tv2sig")===sig)return;localStorage.setItem("gan_bk_tv2",j);localStorage.setItem("gan_bk_tv2sig",sig);localStorage.setItem("gan_bk_tv2at",String(Date.now()))}catch(e){}}
  function embedded(){try{const e=document.getElementById("ns-published-lineup");if(e){const j=JSON.parse(e.textContent);if(okS(j))return j}}catch(e){}return null}
- function take(j){if(okS(j)&&(!PUB||(j.at||0)>(PUB.at||0))){PUB=j;AC.clear();try{if(!isAd()){if(j.od_tier)DB.set("od_tier",j.od_tier);if(j.pluto)DB.set("plutoCh",j.pluto)}}catch(e){}return true}return false}
+ function normCh(c){if(!c||typeof c!=="object")return c;if(c.n===2)return Object.assign({},c,{on:true,acc:"free",tier:0,paidOnly:false});if(c.n<=150&&(c.paidOnly||c.acc==="premium"))return Object.assign({},c,{acc:"free",tier:0,paidOnly:false});return c}
+ function take(j){if(okS(j)&&(!PUB||(j.at||0)>(PUB.at||0))){j.channels=j.channels.map(normCh);PUB=j;AC.clear();try{if(!isAd()){if(j.od_tier)DB.set("od_tier",j.od_tier);if(j.pluto)DB.set("plutoCh",j.pluto)}}catch(e){}return true}return false}
  let SBERR="";async function pull(){let ch=take(embedded());
   try{const S=window.NSSB;if(S&&S.cfg().ok){const row=await S.read("ns_lineup","snapshot");if(row&&row.snapshot){SBERR="";ch=take(row.snapshot)||ch}}}catch(e){SBERR=e.message}
   try{const r=await fetch("tv-lineup.json?v="+Math.floor(Date.now()/6e4),{cache:"no-cache"});if(r.ok)ch=take(await r.json())||ch}catch(e){}
@@ -2634,7 +2654,7 @@ const NSS=(()=>{
   backup();const s=snap();
   try{await S.write("ns_lineup","snapshot",s);const back=await S.read("ns_lineup","snapshot");
    if(!back||!back.snapshot||back.snapshot.at!==s.at)return"NOT CONFIRMED. Supabase accepted the write but reading it back did not return the new lineup, so do not assume visitors have it.";
-   D.set("dirty",0);return"PUBLISHED and read back from Supabase ("+s.channels.length+" channels, "+s.library.length+" library items). Visitors get it on their next refresh, within about a minute."}
+   D.set("dirty",0);const nsl=Object.values(s.schedules).reduce((a,x)=>a+(x||[]).length,0),kb=Math.round(JSON.stringify(s).length/1024);return"PUBLISHED and read back from Supabase ("+s.channels.length+" channels, "+s.library.length+" library items, "+nsl+" schedule slots, "+kb+" KB). Visitors get it on their next refresh, within about a minute."}
   catch(e){return"NOT PUBLISHED: "+e.message+(e.status===401||e.status===403?" (the signed-in account is not on the ns_admins allow-list, or the policies from the SQL file are missing)":"")}}
  async function readSelf(){const page=location.pathname.split("/").pop()||"index.html";
   try{const r=await fetch(page,{cache:"no-store"});if(r.ok)return await r.text()}catch(e){}
@@ -2650,7 +2670,8 @@ const NSS=(()=>{
   return"Downloaded index.html with "+s.channels.length+" channels, "+s.library.length+" library items and every schedule built in"+(c.ok?" (and the Supabase connection, so visitors also get live updates)":" (Supabase not configured, so this is a static snapshot)")+". Upload it to your site in place of the old index.html; every visitor then receives this lineup in the HTML itself."}
  function status(){backup();const un=D.get("dirty",0);return(PUB?"Published lineup visitors get: "+new Date(PUB.at).toLocaleString()+" ("+PUB.channels.length+" channels, "+PUB.library.length+" library items). ":"NOTHING IS PUBLISHED YET: visitors see the built-in default guide only. "+(SBERR?"Supabase read error: "+SBERR+". ":""))+"Your lineup here: "+lib().length+" library items."+" DVR controls: "+(D.get("dvrmode","all")==="subs"?"subscribers only.":"everyone.")+(un?" You have changes that are not published yet.":"")}
  function preview(){const want=[6,8,16,18,20,21];if(!PUB)return"NOTHING PUBLISHED: a visitor sees an empty guide.";VPREV=true;try{AC.clear();const t=Date.now();return"Visitor view of the published lineup ("+new Date(PUB.at).toLocaleString()+"), programs in the next 24h: "+want.map(n=>{const c=chans().find(x=>x.n===n);return n+": "+(c?expand(c,t,t+864e5).length:"no channel")}).join(" | ")}finally{VPREV=false;AC.clear()}}
- const api={dvrMode(){return isAd()?D.get("dvrmode","all"):((PUB&&PUB.dvrmode)||"all")},dirty(){D.set&&0;try{if(!DB.get("tv2_dirty",0))DB.set("tv2_dirty",1)}catch(e){}if(timer)return;timer=setTimeout(()=>{timer=0},45e3)},pull,pubServer,pubHtml,status,preview,backup,backupDl(){dl("northstar-tv-backup.json",JSON.stringify(mine()))}};
+ function loadPublished(){if(!PUB)return"Nothing is published yet, so there is nothing to load.";const P=PUB;try{D.set("channels",P.channels.slice());saveLib((P.library||[]).slice());Object.keys(P.schedules||{}).forEach(n=>saveSl(+n,P.schedules[n]||[]));if(P.od_tier)DB.set("od_tier",P.od_tier);if(P.tiers)D.set("tiers",P.tiers);if(P.bc_sched)DB.set("bc_sched",P.bc_sched);if(Array.isArray(P.pluto))DB.set("plutoCh",P.pluto);if(P.adpl)DB.set("ns_adpl",P.adpl);D.set("dirty",0);AC.clear();return"Loaded the network published "+new Date(P.at).toLocaleString()+": "+P.channels.length+" channels, "+(P.library||[]).length+" library items and "+Object.keys(P.schedules||{}).length+" schedules. Reload the page to see it everywhere."}catch(e){return"Could not load the published network: "+e.message}}
+ const api={loadPublished,dvrMode(){return isAd()?D.get("dvrmode","all"):((PUB&&PUB.dvrmode)||"all")},dirty(){D.set&&0;try{if(!DB.get("tv2_dirty",0))DB.set("tv2_dirty",1)}catch(e){}if(timer)return;timer=setTimeout(()=>{timer=0},45e3)},pull,pubServer,pubHtml,status,preview,backup,backupDl(){dl("northstar-tv-backup.json",JSON.stringify(mine()))}};
  take(embedded());try{if(isAd())backup()}catch(e){}
  pull();setInterval(pull,6e4);document.addEventListener("visibilitychange",()=>{if(!document.hidden)pull()});
  window.NSS=api;return api})();
@@ -2792,7 +2813,7 @@ TIPS.series="Every show with its seasons and episodes. Import a whole season fro
 window.NorthStarTV.series=SER;
 (function(){const s=document.createElement("style");s.textContent=".ccnav,.admnav{position:static!important}.ccbody textarea{min-height:90px}";document.head.appendChild(s)})();
 try{migrate();if(/^(tv|channels|tvguide|tvadmin|admin|live|broadcast)/.test(cur))route();else window.chrome()}catch(e){}
-window.NSX={chans,lib,saveLib,slots,saveSl,schedulable,allowed,vch,nowOn,tiers,tierOf,fmt,uid2,addDays,ytDurs,TABS,TIPS,RIGHTS,D,isAd,canWatch,ccDraw:()=>ccDraw,setDraw:f=>{ccDraw=f},tab:()=>TAB,player:()=>player,setPlayer:f=>{player=f},ytGet,AC};
+window.NSX={expand,expandMan,toUTC,ymdCT,dow,chans,lib,saveLib,slots,saveSl,schedulable,allowed,vch,nowOn,tiers,tierOf,fmt,uid2,addDays,ytDurs,TABS,TIPS,RIGHTS,D,isAd,canWatch,ccDraw:()=>ccDraw,setDraw:f=>{ccDraw=f},tab:()=>TAB,player:()=>player,setPlayer:f=>{player=f},ytGet,AC};
 })();
 </script>
 <style id="ns2css">
@@ -3443,8 +3464,8 @@ const U=()=>{try{return me()}catch(e){return null}};
 const admin=()=>{try{return isAdmin(U())}catch(e){return false}};
 
 /* ================= PLUTO TV: embed + Pluto's own guide, only for Pluto channels and the Pluto page ================= */
-const DEF=[{n:25,name:"Pluto TV Classic Movies",slug:"pluto-tv-classic-movies"}];
-const plist=()=>{const v=DB.get("plutoCh",null);return Array.isArray(v)&&v.length?v:DEF};
+const DEF=[];/* no guessed default Pluto slug: only sources the administrator adds are used */
+const plist=()=>{const v=DB.get("plutoCh",null);return Array.isArray(v)&&v.length?v.filter(x=>x&&x.on!==false):DEF};
 const slugOf=s=>{const m=String(s||"").match(/live-tv\/([\w-]+)/);return m?m[1]:String(s||"").trim().replace(/[^\w-]/g,"")};
 const plUrl=slug=>"https://pluto.tv/en/live-tv"+(slug?"/"+slug:"");
 const slugFor=ch=>{const it=plist().find(x=>x.n===ch.n);return it?slugOf(it.slug):""};
@@ -3491,8 +3512,7 @@ function netHTML(){const S=window.NSSB,c=S.cfg(),signed=S.jwt(),yk=ytKey();
  <div class="row"><input id="nsse" type="email" placeholder="Supabase admin email" value="${esc(S.who())}" autocomplete="username" style="margin:0"><input id="nssp" type="password" placeholder="Supabase admin password" autocomplete="current-password" style="margin:0"><button class="btn" id="nssi">Sign in</button><button class="btn alt" id="nsso" ${signed?"":"disabled"}>Sign out</button></div>
  <p id="nssm" role="status"><b>${c.ok?(signed?"Connected and signed in as "+esc(S.who())+". You can publish.":"Connection saved. Sign in to publish."):"Not connected yet: paste the project URL and anon key."}</b></p>
  <div class="row"><button class="btn" id="nsspub">Publish lineup to everyone now</button><span class="mute">Also publishes Go Live changes automatically. Imports, edits and approvals are NOT visible to visitors until you press this.</span></div><p id="nspm" role="status"></p>
- <h4>Pluto TV channels (embed + guide)</h4><p class="mute">One per line: <code>NorthStar channel number | Name | Pluto slug or link</code>. Example: <code>25 | Pluto TV Classic Movies | pluto-tv-classic-movies</code>. Channels without a line open Pluto's main live guide.</p>
- <textarea id="nspl" rows="4" style="width:100%">${esc(plist().map(x=>[x.n||"",x.name,x.slug].join(" | ")).join("\n"))}</textarea><div class="row"><button class="btn alt" id="nsplv">Save Pluto channels</button></div></div>`}
+ </div>`}
 function netBind(root){const m=(id,t,bad)=>{const e=$q(id,root);if(e){e.textContent=t;e.style.color=bad?"#b00020":""}},S=window.NSSB,re=()=>{const d=document.createElement("div");d.innerHTML=netHTML();const n=root.parentNode,h=root.previousElementSibling;root.replaceWith(d.lastElementChild);netBind($q("#nsnet",n))};
  $q("#nsyks",root).onclick=()=>{const v=$q("#nsyk",root).value.trim();if(!v)return m("#nsykm","Paste a key first.",1);if(!/^[\w-]{20,}$/.test(v))return m("#nsykm","That does not look like a YouTube API key (letters, numbers, - and _ only).",1);DB.set("yt_key_local",v);m("#nsykm","Saved in this browser. The importer and search will use it now. Press Test key to confirm YouTube accepts it.");$q("#nsyk",root).value="";};
  $q("#nsykt",root).onclick=async()=>{const k=$q("#nsyk",root).value.trim()||ytKey();if(!k)return m("#nsykm","No key to test.",1);m("#nsykm","Asking YouTube...");try{const r=await fetch("https://www.googleapis.com/youtube/v3/videos?part=snippet&id=dQw4w9WgXcQ&key="+encodeURIComponent(k)),j=await r.json();if(r.ok&&j.items)m("#nsykm","YouTube accepted this key.");else m("#nsykm","YouTube rejected it: "+((j.error&&j.error.message)||("HTTP "+r.status)),1)}catch(e){m("#nsykm","Could not reach YouTube from this browser ("+e.message+").",1)}};
@@ -3502,7 +3522,7 @@ function netBind(root){const m=(id,t,bad)=>{const e=$q(id,root);if(e){e.textCont
  $q("#nssi",root).onclick=async()=>{S.saveCfg({url:$q("#nssu",root).value,anon:$q("#nssa",root).value});const pw=$q("#nssp",root).value;$q("#nssp",root).value="";m("#nssm","Signing in...");try{await S.signIn($q("#nsse",root).value.trim(),pw);re();const x=$q("#nssm",$q("#nsnet"));if(x)x.textContent="Signed in as "+S.who()+". You can publish."}catch(e){m("#nssm","Sign-in failed: "+e.message,1)}};
  $q("#nsso",root).onclick=()=>{S.signOut();re()};
  $q("#nsspub",root).onclick=async()=>{m("#nspm","Publishing...");const r=await window.NSS.pubServer();m("#nspm",r,/^NOT/.test(r))};
- $q("#nsplv",root).onclick=()=>{const L=$q("#nspl",root).value.split(/\r?\n/).map(s=>s.split("|").map(x=>x.trim())).filter(a=>a.length>=2&&a[a.length-1]).map(a=>a.length>=3?{n:+a[0]||0,name:a[1],slug:slugOf(a[2])}:{n:0,name:a[0],slug:slugOf(a[1])}).filter(x=>x.slug);DB.set("plutoCh",L);try{window.NSS.dirty()}catch(e){}m("#nspm",L.length?"Saved "+L.length+" Pluto channel(s). Publish to send it to visitors.":"Cleared. The default list is used.")}}
+}
 window.NSNET={mount(el){if(!admin()||el.querySelector("#nsnet"))return;el.insertAdjacentHTML("beforeend",netHTML());netBind($q("#nsnet",el))}};
 
 /* ================= ON-DEMAND: Movies | TV Shows, artwork, categories, search, seasons ================= */
@@ -3614,6 +3634,140 @@ $q("#adpub",root).onclick=async()=>{msg("Publishing...");const r=await publish()
 
 const prev=window.NSNET&&window.NSNET.mount;
 if(window.NSNET)window.NSNET.mount=function(el){try{prev&&prev.apply(this,arguments)}catch(e){}if(!admin())return;try{const N=X();if(N.D&&!N.D.get("mig80",0)){const c=N.chans().map(x=>[80,81,82].includes(x.n)&&x.acc==="premium"&&!x.paidOnly?Object.assign({},x,{acc:"free",tier:0,cat:"themed",what:String(x.what||"").replace(/ for members/i,"")}):x);N.D.set("channels",c);N.D.set("mig80",1);try{window.NSS.dirty()}catch(e){}}}catch(e){}try{if(!el.querySelector("#nspick")){el.insertAdjacentHTML("beforeend",plutoHTML());plutoBind($q("#nspick",el))}if(!el.querySelector("#nssvc")){el.insertAdjacentHTML("beforeend",svcHTML());svcBind($q("#nssvc",el))}if(!el.querySelector("#nsads")){el.insertAdjacentHTML("beforeend",adHTML());adBind($q("#nsads",el))}}catch(e){console.error("NorthStar stage 3",e)}};
+})();
+</script>
+
+<script id="ns-stage4">
+/* NorthStar stage 4 (admin only): Pluto source manager, Network operations (health scan, bulk channels, copy/move/shift/swap
+   programs, load published network) and Ad playlists + break builder. Built on the existing scheduler (NSX); nothing here
+   creates a second schedule or a second database. Everything it changes is published by the existing Publish button. */
+(function(){"use strict";
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const $q=(s,r)=>(r||document).querySelector(s),$a=(s,r)=>[...(r||document).querySelectorAll(s)];
+const U=()=>{try{return me()}catch(e){return null}};
+const admin=()=>{try{return isAdmin(U())}catch(e){return false}};
+const X=()=>window.NSX||{};
+const say=(root,id,t,bad)=>{const e=$q(id,root);if(e){e.textContent=t;e.style.color=bad?"#b00020":""}};
+const dirty=()=>{try{window.NSS.dirty()}catch(e){}};
+const TZ="America/Chicago",todayCT=()=>new Intl.DateTimeFormat("en-CA",{timeZone:TZ}).format(new Date());
+const hmCT=ms=>new Intl.DateTimeFormat("en-GB",{timeZone:TZ,hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).format(new Date(ms));
+const hm=m=>String(Math.floor(m/60)%24).padStart(2,"0")+":"+String(m%60).padStart(2,"0");
+const toMin=s=>{const m=/^(\d{1,2}):(\d{2})$/.exec(String(s||""));return m?(+m[1])*60+(+m[2]):NaN};
+const isYmd=s=>/^\d{4}-\d{2}-\d{2}$/.test(String(s||""));
+
+/* ================= Pluto source manager ================= */
+const PL={get(){const v=DB.get("plutoCh",[]);return Array.isArray(v)?v:[]},set(L){DB.set("plutoCh",L);dirty()}};
+const CHK={};
+function plsHTML(ed){const L=PL.get(),e=ed!=null?L[ed]:null;
+return`<div class="card" id="nspsrc" data-testid="pluto-sources"><h4>Pluto TV sources</h4>
+<p class="mute" style="max-width:78ch">Each source is one Pluto TV live channel. Give it a NorthStar channel number and it appears in the lineup and guide; a disabled source is kept in this list but hidden from viewers. Pluto has no official embed or guide API for outside sites, so playback and the guide use Pluto's public pages and unofficial endpoints and can stop working without notice. <b>Check on Pluto</b> compares a source with Pluto's own channel list as served to this browser.</p>
+<table>${L.map((x,i)=>`<tr data-i="${i}"><td><b>${esc(x.name)}</b><br><small class="mute">${esc(x.slug)}</small></td><td>${x.n?"Channel "+x.n:"<span class='mute'>not assigned</span>"}</td><td><small>${x.on===false?"DISABLED":"enabled"}${CHK[x.slug]?" &middot; "+esc(CHK[x.slug]):""}</small></td><td><button class="btn alt" data-tg="${i}">${x.on===false?"Enable":"Disable"}</button> <button class="btn alt" data-ed="${i}">Edit</button> <button class="btn alt" data-ck="${i}">Check on Pluto</button> <button class="btn alt" data-rm="${i}">Remove</button></td></tr>`).join("")||"<tr><td class='mute'>No Pluto sources yet. Add one below, or load Pluto's list with the channel picker further down.</td></tr>"}</table>
+<div class="row"><input id="psn" placeholder="Name" value="${esc(e?e.name:"")}" style="margin:0"><input id="pss" placeholder="Pluto slug or pluto.tv/live-tv link" value="${esc(e?e.slug:"")}" style="min-width:260px;margin:0"><input id="psc" type="number" min="1" placeholder="NorthStar channel #" value="${e&&e.n?e.n:""}" style="width:170px;margin:0"><button class="btn" id="psadd">${e?"Save changes":"Add source"}</button>${e?'<button class="btn alt" id="pscx">Cancel</button>':""}</div>
+<div class="row"><button class="btn alt" id="pschk">Check all on Pluto</button></div><p id="psm" role="status" class="mute"></p></div>`}
+function plsBind(root,ed){const m=(t,b)=>say(root,"#psm",t,b);
+ const re=(e2)=>{const d=document.createElement("div");d.innerHTML=plsHTML(e2);const n=d.firstElementChild;root.replaceWith(n);plsBind(n,e2)};
+ const slugOf=s=>(window.NSPluto&&window.NSPluto.slugOf)?window.NSPluto.slugOf(s):String(s||"").trim().replace(/[^\w-]/g,"");
+ $q("#psadd",root).onclick=()=>{const nm=$q("#psn",root).value.trim(),slug=slugOf($q("#pss",root).value),n=parseInt($q("#psc",root).value,10)||0,L=PL.get().slice();
+  if(!nm)return m("Enter a name.",1);if(!slug)return m("Enter the Pluto channel slug or paste its pluto.tv/live-tv link.",1);
+  if(L.some((x,i)=>i!==ed&&String(x.slug).toLowerCase()===slug.toLowerCase()))return m("That Pluto channel is already in the list.",1);
+  if(n>0){const o=L.findIndex((x,i)=>i!==ed&&x.n===n);if(o>=0)return m("NorthStar channel "+n+" already uses \""+L[o].name+"\". Use another number or edit that source.",1);
+   const ex=X().chans&&X().chans().find(c=>c.n===n&&!c.pluto&&!c.external&&!(ed!=null&&L[ed]&&L[ed].n===n));if(ex&&!confirm("NorthStar channel "+n+" ("+ex.name+") already exists. It will open Pluto instead of its own schedule. Continue?"))return}
+  const rec={n,name:nm,slug,on:ed!=null?L[ed].on!==false:true};if(ed!=null)L[ed]=Object.assign({},L[ed],rec);else L.push(rec);PL.set(L);re(null);setTimeout(()=>say(document,"#psm",(ed!=null?"Saved ":"Added ")+nm+". Press Publish lineup to send it to viewers."),0)};
+ if($q("#pscx",root))$q("#pscx",root).onclick=()=>re(null);
+ $a("[data-tg]",root).forEach(b=>b.onclick=()=>{const L=PL.get().slice(),i=+b.dataset.tg;L[i]=Object.assign({},L[i],{on:L[i].on===false});PL.set(L);re(null)});
+ $a("[data-ed]",root).forEach(b=>b.onclick=()=>re(+b.dataset.ed));
+ $a("[data-rm]",root).forEach(b=>b.onclick=()=>{const L=PL.get(),i=+b.dataset.rm;if(!confirm("Remove "+L[i].name+" from the Pluto list?"))return;PL.set(L.filter((x,k)=>k!==i));re(null)});
+ async function check(list){if(!window.NSPluto||!window.NSPluto.plChannels)throw new Error("the Pluto module is not loaded");const ALL=await window.NSPluto.plChannels();list.forEach(x=>{const f=ALL.find(c=>String(c.slug).toLowerCase()===String(x.slug).toLowerCase());CHK[x.slug]=f?"found on Pluto as \""+f.name+"\"":"NOT in Pluto's list as served to this browser"});return ALL.length}
+ $a("[data-ck]",root).forEach(b=>b.onclick=async()=>{const x=PL.get()[+b.dataset.ck];m("Asking Pluto...");try{const n=await check([x]);re(null);setTimeout(()=>say(document,"#psm","Pluto returned "+n+" channels. "+x.name+": "+CHK[x.slug]+"."),0)}catch(e){m("Could not reach Pluto from this browser ("+(e.message||e)+"). Pluto may block outside sites; nothing was changed.",1)}});
+ $q("#pschk",root).onclick=async()=>{const L=PL.get();if(!L.length)return m("Add a source first.",1);m("Asking Pluto...");try{const n=await check(L);re(null);setTimeout(()=>say(document,"#psm","Pluto returned "+n+" channels. Results are shown on each row."),0)}catch(e){m("Could not reach Pluto from this browser ("+(e.message||e)+"). Pluto may block outside sites; nothing was changed.",1)}}}
+
+/* ================= Network operations ================= */
+function scan(){const N=X(),out=[],add=(lv,t)=>out.push({lv,t});const C=N.chans(),Lb=N.lib(),by=new Map(Lb.map(x=>[x.id,x]));
+ const c2=C.find(c=>c.n===2);if(!c2)add("bad","Channel 2 is missing from the lineup.");else if(c2.on===false)add("bad","Channel 2 is switched off. It must stay on and free for everyone.");else add("ok","Channel 2 is on and free for every viewer.");
+ const stale=C.filter(c=>c.n<=150&&(c.paidOnly||c.acc==="premium"));if(stale.length)add("warn",stale.length+" channel(s) in 1-150 carry an old paid-only flag ("+stale.slice(0,8).map(c=>c.n).join(", ")+"). Free viewers can still watch them: channels 1-150 are free, 151 and up are paid.");
+ const now=Date.now(),a=now-864e5,b=now+14*864e5;let slots=0,conf=0,bad=0;
+ C.forEach(c=>{const S=N.slots(c.n);slots+=S.length;
+  S.forEach(s=>{const it=by.get(s.lib);if(!it){bad++;add("bad","Channel "+c.n+": a slot ("+s.d+" "+s.t+") points to a library item that no longer exists.")}else if(!N.schedulable(it)){bad++;add("bad","Channel "+c.n+": \""+it.title+"\" cannot air yet (rights, runtime or link not confirmed).")}});
+  if(S.length&&N.expandMan){const mm=N.expandMan(c,a,b),k=mm.conflicts||[];if(k.length){conf+=k.length;add("bad","Channel "+c.n+" ("+c.name+"): "+k.length+" program(s) overlap and cannot air in the next 14 days, for example \""+k[0].title+"\" at "+new Date(k[0].start).toLocaleString()+".")}const sh=mm.filter(x=>x.shifted);if(sh.length)add("warn","Channel "+c.n+": "+sh.length+" program(s) start late because an earlier one runs over.")}
+  if(c.n>150&&c.on!==false&&!c.external&&!S.length)add("warn","Channel "+c.n+" ("+c.name+") has no scheduled programs.")});
+ const pl=PL.get();pl.forEach((x,i)=>{if(x.on!==false&&!x.n)add("warn","Pluto source \""+x.name+"\" is enabled but has no NorthStar channel number.");if(pl.findIndex(y=>String(y.slug).toLowerCase()===String(x.slug).toLowerCase())!==i)add("bad","Pluto source \""+x.name+"\" is listed more than once.")});
+ const ads=Lb.filter(x=>x.type==="commercial"),P=(DB.get("ns_adpl",null)||{}).playlists||[];ads.filter(x=>!x.adOff&&!N.schedulable(x)).forEach(x=>add("warn","Commercial \""+x.title+"\" cannot air yet (rights, runtime or link)."));
+ P.forEach(p=>(p.items||[]).forEach(i=>{if(!by.get(i.id))add("bad","Ad playlist \""+p.name+"\" uses a commercial that no longer exists.")}));
+ add(conf||bad?"warn":"ok","Scanned "+C.length+" channels and "+slots+" schedule slots: "+conf+" overlap(s), "+bad+" unusable slot(s). "+(window.NSS?window.NSS.status():""));return out}
+function opsHTML(){const N=X(),C=N.chans();
+return`<div class="card" id="nsops" data-testid="network-ops"><h4>Network operations</h4>
+<p class="mute" style="max-width:78ch">Works on the same schedules as the Schedule tab, for any channel number. Changes stay in this browser until you press Publish lineup.</p>
+<div class="row"><button class="btn" id="opscan">Scan the whole network</button><button class="btn alt" id="oploadpub">Load the published network into this browser</button></div><div id="opres"></div>
+<h4>Create channels in bulk</h4><div class="row"><label>From <input id="opf" type="number" min="1" value="151" style="width:90px;margin:0"></label><label>To <input id="opt" type="number" min="1" value="160" style="width:90px;margin:0"></label><input id="opn" value="NorthStar {n}" style="margin:0" aria-label="Name pattern"><select id="opc" style="margin:0"><option value="themed">Themed</option><option value="net">Main network</option><option value="movie">Movies</option><option value="kids">Kids &amp; family</option><option value="retro">Decades &amp; genres</option><option value="actor">Actors &amp; crews</option></select><button class="btn" id="opcr">Create channels</button></div><p class="mute">Use {n} in the name for the channel number. New channels stay out of viewers' guides until they have programming. Existing numbers are skipped.</p>
+<h4>Move, copy, shift and swap scheduled programs</h4>
+<div class="row"><label>Channel <select id="ops" style="margin:0">${C.map(c=>`<option value="${c.n}">${c.n} &middot; ${esc(c.name)}</option>`).join("")}</select></label><button class="btn alt" id="opsl">Show its scheduled programs</button></div>
+<div id="oplist" style="max-height:280px;overflow:auto"></div>
+<div class="row"><label>Target channel <input id="opt2" type="number" min="1" style="width:110px;margin:0"></label><button class="btn" id="opcp">Copy selected</button><button class="btn" id="opmv">Move selected</button><button class="btn alt" id="opsw">Swap whole schedules (source and target)</button></div>
+<div class="row"><label>Shift by minutes <input id="opsh" type="number" value="30" style="width:100px;margin:0"></label><button class="btn" id="opshb">Shift selected (or all)</button><label>Set date <input id="opd" type="date" style="margin:0"></label><label>start <input id="opti" type="time" style="margin:0"></label><button class="btn" id="opset">Apply to selected</button><button class="btn alt" id="oprm">Remove selected</button></div>
+<p id="opm" role="status" class="mute"></p></div>`}
+function opsBind(root){const N=X(),m=(t,b)=>say(root,"#opm",t,b);let sel=null;
+ const srcN=()=>+$q("#ops",root).value;
+ const slotsOf=n=>N.slots(n).slice().sort((a,b)=>(a.d+a.t).localeCompare(b.d+b.t));
+ function list(){const n=srcN(),S=slotsOf(n),Lb=new Map(N.lib().map(x=>[x.id,x]));sel=n;
+  $q("#oplist",root).innerHTML=S.length?`<table><tr><th></th><th>Date</th><th>Start (Central)</th><th>Minutes</th><th>Repeat</th><th>Program</th></tr>${S.map(s=>{const it=Lb.get(s.lib);return`<tr><td><input type="checkbox" data-s="${esc(s.id)}" aria-label="Select"></td><td>${esc(s.d)}</td><td>${esc(s.t)}</td><td>${esc(s.dur||(it&&it.dur)||"")}</td><td>${esc(s.rep&&s.rep!=="none"?s.rep+(s.until?" until "+s.until:""):"once")}${s.brk?" (break)":""}</td><td>${esc(it?it.title:"(missing)")} <small class="mute">${it?esc(it.type):""}</small></td></tr>`}).join("")}</table>`:"<p class='mute'>No manually scheduled programs on this channel.</p>"}
+ const picked=()=>$a("[data-s]:checked",root).map(i=>i.dataset.s);
+ const commit=(n,S)=>{N.saveSl(n,S);N.AC&&N.AC.clear&&N.AC.clear();dirty()};
+ const target=()=>{const t=parseInt($q("#opt2",root).value,10);if(!t){m("Enter the target channel number.",1);return 0}if(!N.chans().some(c=>c.n===t)){m("Channel "+t+" does not exist yet. Create it above first.",1);return 0}return t};
+ $q("#opsl",root).onclick=list;$q("#ops",root).onchange=list;
+ $q("#opscan",root).onclick=()=>{const r=scan();$q("#opres",root).innerHTML=r.map(x=>`<div class="ccal ${x.lv==="bad"?"bad":x.lv==="ok"?"ok":""}">${esc(x.t)}</div>`).join("")};
+ $q("#oploadpub",root).onclick=()=>{if(!confirm("Replace the channels, library, schedules, Pluto sources and ad playlists in this browser with the published network? Unpublished local changes will be lost."))return;m(window.NSS.loadPublished())};
+ $q("#opcr",root).onclick=()=>{const a=parseInt($q("#opf",root).value,10),b=parseInt($q("#opt",root).value,10),pat=$q("#opn",root).value||"NorthStar {n}",cat=$q("#opc",root).value;if(!(a>0)||!(b>=a))return m("Enter a valid range (From must be 1 or more and not above To).",1);const cnt=b-a+1;if(cnt>200&&!confirm("Create "+cnt+" channels?"))return;
+  N.chans();const base=(N.D.get("channels",[])||[]).slice(),have=new Set(N.chans().map(c=>c.n));let made=0;for(let n=a;n<=b;n++){if(have.has(n))continue;base.push({n,name:pat.replace(/\{n\}/g,n),cat,what:"Programming for channel "+n,hue:(n*37)%360,on:true,acc:"free",tier:0,own:"",m:[],kinds:null,ex:[],mv:false,auto:false,gen:1});made++}
+  N.D.set("channels",base);N.AC&&N.AC.clear&&N.AC.clear();m("Created "+made+" channel(s), "+(cnt-made)+" skipped because the number already exists. Schedule programs on them, then publish."+(b>150?" Channels above 150 are for paid viewers.":""))};
+ const move=(del)=>{const ids=picked();if(!ids.length)return m("Tick the programs first.",1);const t=target();if(!t)return;const n=srcN();if(del&&t===n)return m("Source and target are the same channel.",1);const S=N.slots(n).slice(),T=N.slots(t).slice();S.filter(s=>ids.includes(s.id)).forEach(s=>T.push(Object.assign({},s,{id:N.uid2("s")})));commit(t,T);if(del)commit(n,S.filter(s=>!ids.includes(s.id)));list();m((del?"Moved ":"Copied ")+ids.length+" program(s) to channel "+t+". Publish to send it to viewers.")};
+ $q("#opcp",root).onclick=()=>move(false);$q("#opmv",root).onclick=()=>move(true);
+ $q("#opsw",root).onclick=()=>{const t=target();if(!t)return;const n=srcN();if(t===n)return m("Pick a different target channel.",1);if(!confirm("Swap every manually scheduled program between channel "+n+" and channel "+t+"?"))return;const A=N.slots(n).slice(),B=N.slots(t).slice();commit(n,B);commit(t,A);list();m("Swapped "+A.length+" and "+B.length+" program(s) between channels "+n+" and "+t+".")};
+ $q("#opshb",root).onclick=()=>{const mins=parseInt($q("#opsh",root).value,10);if(!mins)return m("Enter minutes to shift (negative = earlier).",1);const ids=picked(),n=srcN();let k=0;const S=N.slots(n).map(s=>{if(ids.length&&!ids.includes(s.id))return s;const ms=N.toUTC(s.d,s.t)+mins*6e4;k++;return Object.assign({},s,{d:N.ymdCT(ms),t:hmCT(ms)})});commit(n,S);list();m("Shifted "+k+" program(s) by "+mins+" minute(s).")};
+ $q("#opset",root).onclick=()=>{const ids=picked(),d=$q("#opd",root).value,t=$q("#opti",root).value;if(!ids.length)return m("Tick the programs first.",1);if(!d&&!t)return m("Choose a date, a start time, or both.",1);const n=srcN(),S=N.slots(n).map(s=>ids.includes(s.id)?Object.assign({},s,d?{d}:{},t?{t}:{}):s);commit(n,S);list();m("Updated "+ids.length+" program(s).")};
+ $q("#oprm",root).onclick=()=>{const ids=picked();if(!ids.length)return m("Tick the programs first.",1);if(!confirm("Remove "+ids.length+" scheduled program(s)?"))return;const n=srcN();commit(n,N.slots(n).filter(s=>!ids.includes(s.id)));list();m("Removed "+ids.length+" program(s).")};
+ list()}
+
+/* ================= Ad playlists, weights, flight dates and break builder ================= */
+const AP={get(){const v=DB.get("ns_adpl",null);return v&&Array.isArray(v.playlists)?v:{v:1,playlists:[]}},set(o){DB.set("ns_adpl",o);dirty()}};
+const commercials=()=>(X().lib?X().lib():[]).filter(x=>x.type==="commercial").sort((a,b)=>(a.adOrd||0)-(b.adOrd||0));
+function wrr(items){const cur=items.map(()=>0),tot=items.reduce((a,x)=>a+x.w,0);return()=>{let b=0;items.forEach((x,i)=>{cur[i]+=x.w;if(cur[i]>cur[b])b=i});cur[b]-=tot;return items[b].x}}
+function adplHTML(ed){const P=AP.get().playlists,e=ed!=null?P[ed]:null,A=commercials(),C=X().chans?X().chans():[];
+return`<div class="card" id="nsadpl" data-testid="ad-playlists"><h4>Ad playlists and commercial breaks</h4>
+<p class="mute" style="max-width:78ch">Free viewers see NorthStar commercials in Live TV breaks; paid subscribers do not, and On-Demand never has NorthStar breaks. YouTube's own ads are not touched. A playlist picks commercials in proportion to their weights, and its flight dates decide when its breaks run. Commercials come from the Advertising manager above (YouTube-hosted video you are allowed to air).</p>
+<table>${P.map((p,i)=>`<tr><td><b>${esc(p.name)}</b><br><small class="mute">${(p.items||[]).length} commercial(s) &middot; flight ${esc(p.from||"any start")} to ${esc(p.to||"no end")}</small></td><td><button class="btn alt" data-pe="${i}">Edit</button> <button class="btn alt" data-pd="${i}">Delete</button></td></tr>`).join("")||"<tr><td class='mute'>No playlists yet.</td></tr>"}</table>
+<h4>${e?"Edit playlist":"New playlist"}</h4><div class="row"><input id="apn" placeholder="Playlist name" value="${esc(e?e.name:"")}" style="margin:0"><label>Flight from <input id="apf" type="date" value="${esc(e&&e.from||"")}" style="margin:0"></label><label>to <input id="apt" type="date" value="${esc(e&&e.to||"")}" style="margin:0"></label></div>
+${A.length?`<table>${A.map(x=>{const it=e&&(e.items||[]).find(i=>i.id===x.id);return`<tr><td><input type="checkbox" data-ac="${esc(x.id)}" ${it?"checked":""} aria-label="Include ${esc(x.title)}"></td><td>${esc(x.title)} <small class="mute">${esc(x.dur)} min${x.adOff?" &middot; paused":""}</small></td><td><label>Weight <input type="number" min="1" max="100" data-aw="${esc(x.id)}" value="${it?it.w:1}" style="width:70px;margin:0"></label></td></tr>`}).join("")}</table>`:"<p class='mute'>Add commercials in the Advertising manager first.</p>"}
+<div class="row"><button class="btn" id="apsv">${e?"Save playlist":"Create playlist"}</button>${e?'<button class="btn alt" id="apcx">Cancel</button>':""}</div>
+<h4>Build commercial breaks on a channel</h4>
+<div class="row"><label>Channel <select id="abc" style="margin:0">${C.map(c=>`<option value="${c.n}">${c.n} &middot; ${esc(c.name)}</option>`).join("")}</select></label><label>Playlist <select id="abp" style="margin:0">${P.map((p,i)=>`<option value="${i}">${esc(p.name)}</option>`).join("")||"<option value=''>none</option>"}</select></label><label>From <input id="abs" type="time" value="06:00" style="margin:0"></label><label>until <input id="abe" type="time" value="22:00" style="margin:0"></label></div>
+<div class="row"><label>Break every <input id="abi" type="number" min="5" value="30" style="width:80px;margin:0"> min</label><label>Break length <input id="abl" type="number" min="1" max="10" value="2" style="width:70px;margin:0"> min</label><label>Days <select id="abr" style="margin:0"><option value="daily">Every day</option><option value="weekdays">Weekdays</option><option value="weekends">Weekends</option><option value="weekly">Weekly</option></select></label><button class="btn" id="abb">Build breaks</button><button class="btn alt" id="abx">Clear this channel's breaks</button></div>
+<p id="apm" role="status" class="mute"></p></div>`}
+function adplBind(root,ed){const N=X(),m=(t,b)=>say(root,"#apm",t,b),re=(e2)=>{const d=document.createElement("div");d.innerHTML=adplHTML(e2);const n=d.firstElementChild;root.replaceWith(n);adplBind(n,e2)};
+ $q("#apsv",root).onclick=()=>{const name=$q("#apn",root).value.trim(),f=$q("#apf",root).value,t=$q("#apt",root).value;if(!name)return m("Name the playlist.",1);if(f&&t&&t<f)return m("The flight end date is before the start date.",1);
+  const items=$a("[data-ac]:checked",root).map(c=>({id:c.dataset.ac,w:Math.max(1,Math.min(100,parseInt($q('[data-aw="'+c.dataset.ac+'"]',root).value,10)||1))}));if(!items.length)return m("Tick at least one commercial.",1);
+  const o=AP.get(),P=o.playlists.slice();if(P.some((p,i)=>i!==ed&&p.name.toLowerCase()===name.toLowerCase()))return m("A playlist with that name already exists.",1);
+  const rec={id:ed!=null?P[ed].id:N.uid2("pl"),name,from:f,to:t,items};if(ed!=null)P[ed]=rec;else P.push(rec);AP.set({v:1,playlists:P});re(null);setTimeout(()=>say(document,"#apm","Saved playlist "+name+". Build breaks with it, then publish."),0)};
+ if($q("#apcx",root))$q("#apcx",root).onclick=()=>re(null);
+ $a("[data-pe]",root).forEach(b=>b.onclick=()=>re(+b.dataset.pe));
+ $a("[data-pd]",root).forEach(b=>b.onclick=()=>{const o=AP.get();if(!confirm("Delete this playlist? Breaks already built keep airing until you clear them."))return;AP.set({v:1,playlists:o.playlists.filter((p,i)=>i!==+b.dataset.pd)});re(null)});
+ $q("#abb",root).onclick=()=>{const n=+$q("#abc",root).value,pi=$q("#abp",root).value,P=AP.get().playlists,p=P[+pi];if(!p)return m("Create a playlist first.",1);
+  const a=toMin($q("#abs",root).value),b=toMin($q("#abe",root).value),ev=parseInt($q("#abi",root).value,10),len=parseInt($q("#abl",root).value,10),rep=$q("#abr",root).value;if(!(a>=0)||!(b>a))return m("Set a start time that is before the end time.",1);if(!(ev>=5)||!(len>=1))return m("Break spacing must be at least 5 minutes and length at least 1.",1);if(len>=ev)return m("The break must be shorter than the gap between breaks.",1);
+  const by=new Map(N.lib().map(x=>[x.id,x])),pool=(p.items||[]).map(i=>({x:by.get(i.id),w:i.w})).filter(o=>o.x&&!o.x.adOff&&N.schedulable(o.x)&&(!(o.x.chs||[]).length||o.x.chs.includes(n)));
+  if(!pool.length)return m("None of this playlist's commercials can air on channel "+n+" (paused, rights/runtime not confirmed, or limited to other channels).",1);
+  const next=wrr(pool),d=p.from&&p.from>todayCT()?p.from:(p.from||todayCT()),S=N.slots(n).filter(s=>!s.adbrk),add=[];let positions=0;
+  for(let t=a;t<b;t+=ev){positions++;let cur=t,used=0,guard=0;while(used<len&&guard++<20){const it=next(),mins=Math.max(1,Math.ceil(+it.dur||1));add.push({id:N.uid2("s"),lib:it.id,d,t:hm(cur),dur:+it.dur||mins,rep,until:p.to||"",ai:0,brk:1,adbrk:p.id});cur+=mins;used+=mins}}
+  N.saveSl(n,S.concat(add));N.AC&&N.AC.clear&&N.AC.clear();dirty();
+  const now=Date.now(),cf=N.expandMan?(N.expandMan(N.chans().find(c=>c.n===n),now,now+3*864e5).conflicts||[]).length:0;
+  m("Built "+positions+" break position(s) with "+add.length+" commercial slot(s) on channel "+n+" ("+(rep==="daily"?"every day":rep)+", flight "+(p.from||"now")+" to "+(p.to||"open")+"). "+(cf?cf+" slot(s) overlap existing manual programs on that channel; run the network scan."  :"No overlaps with manual programs in the next 3 days.")+" Publish to send it to viewers.")};
+ $q("#abx",root).onclick=()=>{const n=+$q("#abc",root).value,S=N.slots(n),k=S.filter(s=>s.adbrk).length;N.saveSl(n,S.filter(s=>!s.adbrk));N.AC&&N.AC.clear&&N.AC.clear();dirty();m("Removed "+k+" break slot(s) from channel "+n+".")}}
+
+/* ================= mount (after stage 3) ================= */
+const prev=window.NSNET&&window.NSNET.mount;
+if(window.NSNET)window.NSNET.mount=function(el){try{prev&&prev.apply(this,arguments)}catch(e){}if(!admin())return;
+ try{if(!el.querySelector("#nspsrc")){el.insertAdjacentHTML("beforeend",plsHTML(null));plsBind($q("#nspsrc",el),null)}
+  if(!el.querySelector("#nsops")){el.insertAdjacentHTML("beforeend",opsHTML());opsBind($q("#nsops",el))}
+  if(!el.querySelector("#nsadpl")){el.insertAdjacentHTML("beforeend",adplHTML(null));adplBind($q("#nsadpl",el),null)}}catch(e){console.error("NorthStar stage 4",e)}};
+window.NSOPS={scan};
 })();
 </script>
 
