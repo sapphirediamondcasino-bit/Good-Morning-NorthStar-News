@@ -2111,6 +2111,18 @@ dock();plutoRefresh();syncPoll();setInterval(syncPoll,2e4);route();
 })();
 </script>
 
+<script id="ns-lineup-migrate">
+/* One-time lineup fix: Slime Time 32, Toon Town 42, Kingdom TV 65, Midnight TV 19. Moves the saved channel AND its schedule together (by name, never by guess). */
+(function(){"use strict";try{var P="gan_tv2_",F=P+"mig_lineup_2026",L=localStorage;if(L.getItem(F))return;var r=L.getItem(P+"channels");if(!r){return}
+ var ch=JSON.parse(r);if(!Array.isArray(ch)){return}var log=[];
+ function find(re){return ch.find(function(c){return c&&re.test(String(c.name||""))})}
+ function mv(c,n){if(!c||c.n===n)return;if(ch.some(function(x){return x&&x.n===n&&x!==c})){log.push(c.name+": channel "+n+" is taken, not moved");return}
+  var o=c.n,a=L.getItem(P+"sl_"+o);c.n=n;if(a!==null){L.setItem(P+"sl_"+n,a);L.removeItem(P+"sl_"+o)}log.push(c.name+": "+o+" -> "+n)}
+ var tr=ch.find(function(c){return c&&c.n===42&&/tribute/i.test(String(c.name||""))});mv(tr,44);
+ mv(find(/^Toon Town$/i),42);mv(find(/^Slime Time$/i),32);mv(find(/^Kingdom TV$/i),65);mv(find(/^Midnight TV$/i),19);
+ L.setItem(P+"channels",JSON.stringify(ch));L.setItem(F,"1");L.setItem(P+"mig_log",JSON.stringify(log));
+ if(log.length)console.log("NorthStar lineup fix:",log.join("; "))}catch(e){}})();
+</script>
 <script>
 /* ===== NorthStar TV Network v2: time-slot schedules, cable guide, admin section, optional scheduling assistant, pitches, premium access ===== */
 (function(){"use strict";
@@ -2143,9 +2155,9 @@ C(8,"Family Room","net","Family movies and series for the whole house, including
 C(13,"Haunted Castle","halloween","Disney Halloween: spooky-season movies and episodes",275,"",0,[["halloween","disney"],["halloweentown"],["hocus pocus"]]),
 C(14,"Slime Fright Night","halloween","Nickelodeon Halloween: creepy-fun episodes and specials",95,"",0,[["halloween","nick"],["halloween","nickelodeon"]]),
 C(15,"Toon Terror","halloween","Cartoon Network Halloween: monster-sized cartoon marathons",130,"",0,[["halloween","cartoon network"]]),
-C(16,"Kingdom TV","kids","Disney Channel shows and Disney movies in one place: Wizards of Waverly Place, The Suite Life, The Proud Family and more",285,"",0,[["disney"],["waverly place"],["suite life"],["proud family"]],null,["halloween"]),
-C(17,"Slime Time","kids","Nickelodeon shows and movies, from the SNICK era to today",30,"",0,[["nickelodeon"],["nick"],["snick"]],null,["halloween","nick at nite"]),
-C(18,"Toon Town","kids","Cartoon Network cartoons, old and new",20,"",0,[["cartoon network"]],null,["halloween"]),
+C(65,"Kingdom TV","kids","Disney Channel shows and Disney movies in one place: Wizards of Waverly Place, The Suite Life, The Proud Family and more",285,"",0,[["disney"],["waverly place"],["suite life"],["proud family"]],null,["halloween"]),
+C(32,"Slime Time","kids","Nickelodeon shows and movies, from the SNICK era to today",30,"",0,[["nickelodeon"],["nick"],["snick"]],null,["halloween","nick at nite"]),
+C(42,"Toon Town","kids","Cartoon Network cartoons, old and new",20,"",0,[["cartoon network"]],null,["halloween"]),
 C(19,"Midnight TV","net","Adult Swim programming and adult animation after dark (mature audiences)",250,"",0,[["adult swim"]]),
 C(20,"Movie Marquee","movie","The movie channel: movies from the NorthStar library, scheduled around the clock",355,"",0,[],["movie"],[],true),
 C(21,"Encore Cinema","movie","A second movie channel with its own rotation from the NorthStar movie library",215,"",0,[],["movie"],[],true),
@@ -2156,7 +2168,7 @@ C(26,"Pluto Classic TV","net","Classic television destination on Pluto TV. Brows
 C(27,"Evergreen Holidays","holiday","Holiday movies and specials, festive all season",140,"",0,[["christmas"],["holiday"]]),
 C(40,"Tribute: Betty White","tribute","A tribute channel. Fan-curated, not affiliated with or endorsed by the honoree or their estate.",50,"",0,[["betty white"]]),
 C(41,"Tribute: Catherine O'Hara","tribute","A tribute channel. Fan-curated, not affiliated with or endorsed by the honoree or their estate.",320,"",0,[["catherine o hara"]]),
-C(42,"Tribute: Diane Keaton","tribute","A tribute channel. Fan-curated, not affiliated with or endorsed by the honoree or their estate.",35,"",0,[["diane keaton"]]),
+C(44,"Tribute: Diane Keaton","tribute","A tribute channel. Fan-curated, not affiliated with or endorsed by the honoree or their estate.",35,"",0,[["diane keaton"]]),
 C(43,"Sandler & Crew Movie Night","tribute","Movies and specials featuring Adam Sandler and friends. Fan-curated, not affiliated or endorsed.",210,"",0,[["adam sandler"]]),
 C(80,"Showcase","themed","Creator programming",290,"free",0),C(81,"Cinema Club","themed","Movies",215,"free",0),C(82,"Originals","themed","Originals",180,"free",0)];
 SEED.find(c=>c.n===22).external="https://pluto.tv/live-tv";
@@ -2184,7 +2196,7 @@ const GEN=(()=>{const out=[];let n=100;const add=(name,cat,what,words)=>{const c
  const need=300-(23+out.length);H.slice(0,Math.max(0,need)).forEach(h=>add(h,"themed","Themed programming. Fills from library items tagged \""+h.split(" ")[0].toLowerCase()+"\" or assigned to it.",[h.split(" ")[0].toLowerCase()]));
  return out})();
 GEN.forEach(c=>SEED.push(c));
-const FORCE=[5,6,7,8,13,14,15,16,17,18,19,20,21,22,23,24,25,26],GONE=[9,10,11,12,21,22,23,24,25,26,28,29,31,32,33,34,35,36];
+const FORCE=[5,6,7,8,13,14,15,19,20,21,22,23,24,25,26,32,42,65],GONE=[9,10,11,12,16,17,18,21,22,23,24,25,26,28,29,31,33,34,35,36];
 const SEEDM={};SEED.forEach(c=>{SEEDM[c.n]=c});
 function upgradeLineup(c){SEED.forEach(sd=>{const i=c.findIndex(y=>y.n===sd.n);if(i<0){c.push(Object.assign({},sd));return}if(FORCE.includes(sd.n)){const o=c[i];c[i]=Object.assign({},sd,{on:o.on!==false})}else{const x=c[i];if(x.m===undefined){x.m=sd.m;if(sd.kinds)x.kinds=sd.kinds}if(x.auto===undefined)x.auto=true}});
  for(let i=c.length-1;i>=0;i--){if(GONE.includes(c[i].n)&&!SEEDM[c[i].n]&&!D.get("sl_"+c[i].n,[]).length)c.splice(i,1)}return c}
@@ -2339,7 +2351,7 @@ function guide(el){const we=ws+HRS*60*MIN,now=Date.now(),W=HRS*60*PXM;const list
  return`<div class="cgi" style="width:${168+W}px"><div class="cgh"><div class="cgc">${new Intl.DateTimeFormat([],{weekday:"short",month:"short",day:"numeric"}).format(ws)}</div><div class="cgbody" style="width:${W}px">${ticks.join("")}</div></div>${rows||'<p style="padding:14px">No channels match.</p>'}${nl}</div>`}
 let tvAdminTick=0;
 const onNow=ch=>{const o=nowOn(ch);return!!(o.lv||o.cur)};
-function startCh(a){const n=parseInt(a,10),L=vch();if(n&&L.some(c=>c.n===n))return n;const s=L.find(c=>c.n===sel);if(s&&onNow(s)&&canWatch(s).ok)return s.n;const two=L.find(c=>c.n===2);if(two&&onNow(two))return 2;const w=L.find(c=>canWatch(c).ok&&onNow(c));return(w||L[0]||{n:2}).n}
+function startCh(a){const n=parseInt(a,10),L=vch();if(n&&L.some(c=>c.n===n))return n;if(!window.__ns2first){window.__ns2first=1;const t2=L.find(c=>c.n===2);if(t2&&canWatch(t2).ok&&onNow(t2))return 2}const s=L.find(c=>c.n===sel);if(s&&onNow(s)&&canWatch(s).ok)return s.n;const two=L.find(c=>c.n===2);if(two&&onNow(two))return 2;const w=L.find(c=>canWatch(c).ok&&onNow(c));return(w||L[0]||{n:2}).n}
 V.tv=V.channels=V.tvguide=V.live=V.broadcast=function(a,el){migrate();clearInterval(tickT);
  document.documentElement.classList.toggle("tvtv",TVMODE);document.documentElement.classList.add("tvlive");
  sel=startCh(a);selAir=null;ws=snap(Date.now()-30*MIN);const S=season(),mk=()=>chans().find(c=>c.n===sel&&c.on)||chans().find(c=>c.on);
@@ -2495,7 +2507,7 @@ function tvmInit(sec){try{mergeAll()}catch(e){}const draw=()=>ccDraw(sec),val=n=
 const saveCh=c=>D.set("channels",c);
 const hmCT=t=>new Intl.DateTimeFormat("en-GB",{timeZone:TZ,hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).format(new Date(t));
 const cs=document.createElement("style");cs.textContent=`.ccnav{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0;position:sticky;top:0;background:var(--bg,#fff);padding:6px 0;z-index:3}.ccbody table{width:100%;border-collapse:collapse}.ccbody th{text-align:left;font-size:12px}.ccal{padding:8px 12px;border-radius:8px;margin:4px 0;background:#fff4d6;color:#5b3b00}.ccal.bad{background:#fde2e2;color:#7a1010}.ccal.ok{background:#e0f5e6;color:#14532d}.pgr{display:flex;gap:8px;border-bottom:1px solid var(--line,#ddd);padding:4px 0}.pgc{flex:0 0 150px;font-size:13px}.pgb{display:flex;gap:4px;overflow-x:auto;flex:1}.pgp{flex:0 0 auto;max-width:230px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border:1px solid #31456f;border-radius:6px;background:#1b2a4d;color:#fff;padding:4px 8px;cursor:pointer;font:600 12px system-ui}.pgp i{font-size:9px;opacity:.7}.pgp.sel{outline:2px solid #f5c542}.pged{border:2px solid #f5c542;border-radius:10px;padding:10px;margin:10px 0}.tvnum{position:absolute;top:16px;right:20px;z-index:9;font:800 clamp(36px,8vw,80px) system-ui;color:#fff;text-shadow:0 2px 8px #000;display:none}.tvnum.on{display:block}.tvld{position:absolute;inset:0;display:grid;place-items:center;background:#0a0f1c;color:#fff;font:700 18px system-ui;pointer-events:none;animation:tvld 6s forwards}@keyframes tvld{0%,80%{opacity:1}100%{opacity:0;visibility:hidden}}.tvpi{position:absolute;left:0;right:0;bottom:0;z-index:7;background:rgba(6,12,28,.93);color:#fff;padding:12px 16px;max-height:55%;overflow:auto}.tvpi[hidden]{display:none}.tvctl input[type=number]{width:70px;border-radius:20px;padding:6px 10px}.tvctl input[type=range]{width:80px}.cgdesc{flex:0 0 auto;background:#101a33;border-top:1px solid #31456f;padding:8px 14px;font-size:14px;min-height:56px}.tverr{z-index:4}`;document.head.appendChild(cs);
-const TABS=[["home","Home"],["lib","Library"],["series","TV Shows"],["sched","Schedule"],["chan","Channels"],["auto","Auto-fill"],["chk","Link Checker"],["more","More"]];
+const TABS=[["home","Home"],["lib","Library"],["music","Music"],["series","TV Shows"],["sched","Schedule"],["chan","Channels"],["auto","Auto-fill"],["chk","Link Checker"],["more","More"]];
 let TAB=D.get("cctab2","home"),PG=null,CMSG="",LQ="",LFL="all",LPG=0,LE=null,LSEL=new Set(),CQ="",CCAT="",CPG=0,CONLY=0,SPRE="",SCHV=0;
 const ch1=n=>chans().find(c=>c.n===n);
 const STAT=x=>x.bad?["bad","Can't air: "+x.bad]:x.fake&&!x.okreal?["fk","Check this: "+x.fake]:!yid(x.yt)?["wait","Needs a video link"]:x.rights==="pending"?["wait","Needs your OK to air"]:x.rterr&&!x.rtv?["wait","Length unknown: "+x.rterr]:!(x.dur>0)?["wait","Needs a length"]:["ok",x.est?"Ready (length is a guess)":"Ready"];
@@ -2531,10 +2543,10 @@ function homeHTML(){const L=lib(),C0=chans().filter(c=>c.on),V=vch(),n={ok:0,wai
 <h4>Live now on Channel 2</h4><p class="mute">${lv?"LIVE: "+H(lv.title||""):"Not live. Channel 2 is following its schedule. To plan a future live or movie event, use Schedule."}</p><div class="row"><input name="glt" placeholder="Live title"><input name="gll" placeholder="YouTube live link"><button class="btn" data-a="golive">Go live now</button><button class="btn alt" data-a="endlive">End live</button></div>
 <h4>On air now</h4><table><tr><th>Ch</th><th>Channel</th><th>Playing</th><th>Next</th></tr>${V.slice(0,25).map(c=>{const o=nowOn(c);return`<tr><td>${c.n}</td><td><b>${H(c.name)}</b></td><td>${o.lv?"LIVE":o.cur?H(o.cur.title):'<span class="mute">Standby</span>'}</td><td>${o.next?H(o.next.title)+" "+fmtCT(o.next.start)+" CT":"-"}</td></tr>`}).join("")}</table>${V.length>25?`<p class="mute">...and ${V.length-25} more. See Channels.</p>`:""}`}
 /* ---- LIBRARY: one list for everything ---- */
-const LFS=[["all","Everything"],["ready","Ready"],["attn","Needs attention"],["catalog","Catalog (no video yet)"],["movie","Movies"],["show","Shows"],["fake","May not be real"],["bad","Can't air"]];
-function libMatch(x){const s=STAT(x)[0],ct=x.src==="catalog"&&!yid(x.yt);switch(LFL){case"ready":return s==="ok";case"attn":return s!=="ok"&&!ct;case"catalog":return ct;case"movie":return x.type==="movie";case"show":return x.type==="show"||x.type==="episode";case"fake":return!!x.fake&&!x.okreal;case"bad":return!!x.bad}return true}
+const LFS=[["all","Everything"],["ready","Ready"],["attn","Needs attention"],["catalog","Catalog (no video yet)"],["movie","Movies"],["show","Shows"],["music","Music"],["fake","May not be real"],["bad","Can't air"]];
+function libMatch(x){const s=STAT(x)[0],ct=x.src==="catalog"&&!yid(x.yt);switch(LFL){case"ready":return s==="ok";case"attn":return s!=="ok"&&!ct;case"catalog":return ct;case"movie":return x.type==="movie";case"music":return x.type==="music";case"show":return x.type==="show"||x.type==="episode";case"fake":return!!x.fake&&!x.okreal;case"bad":return!!x.bad}return true}
 const lord=(a,b)=>(!!yid(b.yt)-!!yid(a.yt))||seqOrd(a,b);
-function addHTML(){const C=chans().filter(c=>c.on);return`<details ${LE===null&&!lib().length?"open":""}><summary><b>+ Add titles</b> <span class="mute">paste your direct YouTube links</span></summary><p class="mute">One title per line: <code>Title | YouTube link | minutes</code>. Minutes are optional, but a real length keeps the guide exact. For a season, fill in Series, Season and First episode and episodes are numbered in order. Titles that look like reviews, discussions or fan videos are held back until you approve them.</p><textarea name="bl" rows="5" style="width:100%" placeholder="Home Alone | https://www.youtube.com/watch?v=XXXXXXXXXXX | 103"></textarea><div class="row"><select name="bt">${opt(Object.entries(TYPES),"movie")}</select><input name="bser" placeholder="Series"><input name="bsea" placeholder="Season" style="width:80px"><input name="bep" type="number" placeholder="First ep #" style="width:90px"><input name="bdm" type="number" min="1" placeholder="Verified minutes" value="" style="width:130px"><input name="btag" placeholder="Tags: actor names, sitcom, 80s, minnesota" style="min-width:230px"></div><div class="row"><select name="bch">${opt([["","Channels pick it up by tags"]].concat(C.map(c=>[c.n,"Put on "+c.n+" "+c.name])),"")}</select><select name="br">${opt(Object.entries(RIGHTS),"embed")}</select><label><input type="checkbox" name="bc"> I confirm I may show this</label><button class="btn" data-cc="bulk">Add</button></div></details>`}
+function addHTML(){const C=chans().filter(c=>c.on);return`<details ${LE===null&&!lib().length?"open":""}><summary><b>+ Add titles</b> <span class="mute">paste your direct YouTube links</span></summary><p class="mute">One title per line: <code>Title | YouTube link | minutes</code>. Minutes are optional, but a real length keeps the guide exact. For a season, fill in Series, Season and First episode and episodes are numbered in order. Titles that look like reviews, discussions or fan videos are held back until you approve them.</p><textarea name="bl" rows="5" style="width:100%" placeholder="Home Alone | https://www.youtube.com/watch?v=XXXXXXXXXXX | 103"></textarea><div class="row"><select name="bt">${opt(Object.entries(TYPES),LFL==="music"?"music":"movie")}</select><input name="bser" placeholder="Series"><input name="bsea" placeholder="Season" style="width:80px"><input name="bep" type="number" placeholder="First ep #" style="width:90px"><input name="bdm" type="number" min="1" placeholder="Verified minutes" value="" style="width:130px"><input name="btag" placeholder="Tags: actor names, sitcom, 80s, minnesota" style="min-width:230px"></div><div class="row"><select name="bch">${opt([["","Channels pick it up by tags"]].concat(C.map(c=>[c.n,"Put on "+c.n+" "+c.name])),"")}</select><select name="br">${opt(Object.entries(RIGHTS),"embed")}</select><label><input type="checkbox" name="bc"> I confirm I may show this</label><button class="btn" data-cc="bulk">Add</button></div></details>`}
 function editHTML(x){return`<tr><td colspan="4"><div class="pged"><b>Edit</b><div class="row"><select name="e_type">${opt(Object.entries(TYPES),x.type)}</select><input name="e_title" value="${H(x.title)}" placeholder="Title" style="min-width:260px"><input name="e_yt" value="${H(x.yt||"")}" placeholder="YouTube link" style="min-width:220px"><input name="e_dur" type="number" step="0.25" min="0" value="${x.dur||""}" placeholder="Minutes" style="width:90px"></div><div class="row"><input name="e_ser" value="${H(x.series||"")}" placeholder="Series"><input name="e_sea" value="${H(x.season||"")}" placeholder="Season" style="width:80px"><input name="e_ep" value="${H(x.ep||"")}" placeholder="Episode" style="width:80px"><input name="e_tags" value="${H(x.tags||"")}" placeholder="Tags" style="min-width:200px"><input name="e_chs" value="${H((x.chs||[]).join(", "))}" placeholder="Only on channels (numbers)" style="width:200px"></div><textarea name="e_syn" rows="2" style="width:100%" placeholder="Description shown in the guide">${H(x.syn||"")}</textarea><div class="row"><select name="e_r">${opt(Object.entries(RIGHTS),x.rights)}</select><button class="btn" data-cc="lsave" data-id="${H(x.id)}">Save</button><button class="btn alt" data-cc="lcancel">Cancel</button></div></div></td></tr>`}
 function libHTML(){const L=lib(),f=L.filter(libMatch).filter(x=>!LQ||hayN(x).includes(norm(LQ))||norm(x.ytTitle).includes(norm(LQ))).sort(lord),pages=Math.max(1,Math.ceil(f.length/50));LPG=Math.min(LPG,pages-1);const pg=f.slice(LPG*50,LPG*50+50),cnt=k=>{const s=LFL;LFL=k;const n=L.filter(libMatch).length;LFL=s;return n};
  return addHTML()+`<div class="row" style="margin-top:10px"><input name="lq" placeholder="Search your library" value="${H(LQ)}" style="min-width:220px">${LFS.map(([k,l])=>`<button class="btn ${LFL===k?"":"alt"}" data-cc="lfl" data-f="${k}">${l} (${cnt(k)})</button>`).join("")}</div>
@@ -2560,12 +2572,12 @@ function chkHTML(){const L=lib(),b=L.filter(x=>x.bad||(x.fake&&!x.okreal)),n=L.f
 function moreHTML(){const t=document.createElement("div");t.innerHTML=tvmHTML();return["subs","acc","bk"].map(k=>{const d=t.querySelector('details[data-k="'+k+'"]');if(!d)return"";d.setAttribute("open","");return d.outerHTML}).join("")}
 const TIPS={home:"What needs attention, and what is on air.",lib:"One list for every movie, show and episode, including the ones from your site. Edit any title, link or length here.",sched:"The guide for the day. Click a program to edit it, or add shows, seasons and events below.",chan:"Rename, renumber, switch on or off, and set what each channel plays.",auto:"How channels fill themselves.",chk:"Find removed videos and anything that is not the real show or movie.",more:"Submissions, premium access, backup and playback errors."};
 function ccDraw(sec){const body={home:homeHTML,lib:libHTML,series:()=>SER.html(),sched:schedHTML,chan:chanHTML,auto:autoHTML,chk:chkHTML,more:moreHTML}[TAB]();
- sec.innerHTML=`<h2 id="tvm-h" style="margin-top:8px">NorthStar TV Network Control Center</h2><div class="ccnav" role="tablist">${TABS.map(([k,l])=>`<button class="btn ${k===TAB?"":"alt"}" role="tab" aria-selected="${k===TAB}" data-cc="tab" data-t="${k}">${l}</button>`).join("")}</div><p class="mute">${TIPS[TAB]}</p><div class="ccbody">${body}</div>`}
+ sec.innerHTML=`<h2 id="tvm-h" style="margin-top:8px">NorthStar TV Network Control Center</h2><div class="ccnav" role="tablist">${TABS.map(([k,l])=>`<button class="btn ${(k==="music"?TAB==="lib"&&LFL==="music":k===TAB&&!(TAB==="lib"&&LFL==="music"))?"":"alt"}" role="tab" aria-selected="${k==="music"?TAB==="lib"&&LFL==="music":k===TAB}" data-cc="tab" data-t="${k}">${l}</button>`).join("")}</div><p class="mute">${TAB==="lib"&&LFL==="music"?"Music: songs, music videos and performances. Add them here like movies, then schedule them on any channel at any time. The guide picks them up when you publish.":TIPS[TAB]}</p><div class="ccbody">${body}</div>`}
 function ccBind(sec,draw){const val=n=>{const x=sec.querySelector('[name="'+n+'"]');return x?x.value:""},chk=n=>{const x=sec.querySelector('[name="'+n+'"]');return!!(x&&x.checked)},keep=n=>{const f=sec.querySelector('[name="'+n+'"]');f&&(f.focus(),f.setSelectionRange(f.value.length,f.value.length))};
  sec.addEventListener("input",e=>{const nm=e.target.name;if(nm==="lq"){LQ=e.target.value;LPG=0;draw();keep("lq")}else if(nm==="chq"){CQ=e.target.value;CPG=0;draw();keep("chq")}});
  sec.addEventListener("change",e=>{const t=e.target,nm=t.name;if(t.dataset.sel){t.checked?LSEL.add(t.dataset.sel):LSEL.delete(t.dataset.sel)}else if(t.dataset.cc==="lall"){sec.querySelectorAll("[data-sel]").forEach(c=>{c.checked=t.checked;t.checked?LSEL.add(c.dataset.sel):LSEL.delete(c.dataset.sel)})}else if(nm==="ccat"){CCAT=t.value;CPG=0;draw()}else if(nm==="conly"){CONLY=t.checked?1:0;CPG=0;draw()}else if(nm==="schv"){SCHV=+t.value||0;draw()}});
  sec.addEventListener("click",async e=>{const b=e.target.closest("[data-cc]");if(!b||b.type==="checkbox")return;const a=b.dataset.cc,id=b.dataset.id;if(a.slice(0,3)==="sr_"){SER.act(a,b,sec,draw,val,chk);return}
- if(a==="tab"){TAB=b.dataset.t;D.set("cctab2",TAB);EDCH=null;LE=null;PG=null;draw()}
+ if(a==="tab"){TAB=b.dataset.t;if(TAB==="music"){TAB="lib";LFL="music";LPG=0}else if(TAB==="lib"&&LFL==="music"){LFL="all";LPG=0}D.set("cctab2",TAB);EDCH=null;LE=null;PG=null;draw()}
  else if(a==="go"){TAB=b.dataset.t;if(b.dataset.f)LFL=b.dataset.f;LPG=0;draw()}
  else if(a==="sync"){TAB="series";D.set("cctab2",TAB);SER.act("sr_scan",b,sec,draw,val,chk)}
  else if(a==="pendok"){if(!confirm("You are confirming you may show these titles. Continue?"))return;const L=lib();let n=0;L.forEach(x=>{if(yid(x.yt)&&x.rights==="pending"){x.rights="embed";x.rnote=(x.rnote||"")+" OK'd to air by admin.";n++}});saveLib(L);AC.clear();CMSG=n+" approved.";draw()}
@@ -2670,12 +2682,13 @@ const NSS=(()=>{
  let SBERR="";async function pull(){let ch=take(embedded());
   try{const S=window.NSSB;if(S&&S.cfg().ok){const row=await S.read("ns_lineup","snapshot");if(row&&row.snapshot){SBERR="";ch=take(row.snapshot)||ch}}}catch(e){SBERR=e.message}
   try{const r=await fetch("tv-lineup.json?v="+Math.floor(Date.now()/6e4),{cache:"no-cache"});if(r.ok)ch=take(await r.json())||ch}catch(e){}
+  try{if(window.NSAUTH&&!isAd()&&PUB&&PUB.library){const d=await NSAUTH.premium();if(d&&d.yt)PUB.library.forEach(x=>{if(d.yt[x.id]){x.yt=d.yt[x.id];delete x.lock}})}}catch(e){}
   if(ch){try{if(typeof __tvTune==="function"&&document.getElementById("tvst"))__tvTune(sel);else if(/^(tv|channels|tvguide|live|broadcast)/.test(cur))route()}catch(e){}}return ch}
  async function pubServer(){const S=window.NSSB;
   if(!S||!S.cfg().ok)return"NOT PUBLISHED. Supabase is not set up: open Admin > Network settings, enter the project URL and anon key, then press Publish again.";
   if(!S.jwt())return"NOT PUBLISHED. Sign in with your Supabase admin email and password in Admin > Network settings first (the sign-in lasts until you close this tab).";
-  backup();const s=snap();
-  try{await S.write("ns_lineup","snapshot",s);const back=await S.read("ns_lineup","snapshot");
+  backup();const s=snap();const pdat=window.NSAUTH?NSAUTH.split(s):null;
+  try{if(pdat)await S.write("ns_premium","data",pdat);await S.write("ns_lineup","snapshot",s);const back=await S.read("ns_lineup","snapshot");
    if(!back||!back.snapshot||back.snapshot.at!==s.at)return"NOT CONFIRMED. Supabase accepted the write but reading it back did not return the new lineup, so do not assume visitors have it.";
    D.set("dirty",0);const nsl=Object.values(s.schedules).reduce((a,x)=>a+(x||[]).length,0),kb=Math.round(JSON.stringify(s).length/1024);return"PUBLISHED and read back from Supabase ("+s.channels.length+" channels, "+s.library.length+" library items, "+nsl+" schedule slots, "+kb+" KB). Visitors get it on their next refresh, within about a minute."}
   catch(e){return"NOT PUBLISHED: "+e.message+(e.status===401||e.status===403?" (the signed-in account is not on the ns_admins allow-list, or the policies from the SQL file are missing)":"")}}
@@ -2684,7 +2697,7 @@ const NSS=(()=>{
   return await new Promise((res,rej)=>{try{const x=new XMLHttpRequest();x.open("GET",location.href.split("#")[0].split("?")[0]);x.onload=()=>(x.status===200||x.status===0)&&x.responseText?res(x.responseText):rej(new Error("status "+x.status));x.onerror=()=>rej(new Error("the browser blocked reading this file"));x.send()}catch(e){rej(e)}})}
  async function pubHtml(){backup();let t;try{t=await readSelf()}catch(e){throw new Error("could not read this page's own source ("+e.message+"). Open the site from its web address (not a file download preview) and try again. Nothing was downloaded.")}
   if(t.indexOf("</head>")<0)throw new Error("the page source looks incomplete, nothing was downloaded");
-  const s=snap(),blk='<script id="ns-published-lineup" type="application/json">'+JSON.stringify(s).replace(/</g,"\\u003c")+'<\/script>',re=/<script id="ns-published-lineup" type="application\/json">[\s\S]*?<\/script>/;
+  const s=snap(),_p=window.NSAUTH?NSAUTH.split(s):0,blk='<script id="ns-published-lineup" type="application/json">'+JSON.stringify(s).replace(/</g,"\\u003c")+'<\/script>',re=/<script id="ns-published-lineup" type="application\/json">[\s\S]*?<\/script>/;
   if(re.test(t))t=t.replace(re,()=>blk);else t=t.replace("</head>",()=>blk+"\n</head>");
   const c=window.NSSB?window.NSSB.cfg():{url:"",anon:""},cb='<script id="ns-sb-config" type="application/json">'+JSON.stringify({url:c.url,anon:c.anon}).replace(/</g,"\\u003c")+'<\/script>',cr=/<script id="ns-sb-config" type="application\/json">[\s\S]*?<\/script>/;
   if(cr.test(t))t=t.replace(cr,()=>cb);
@@ -3096,7 +3109,7 @@ const tf=s=>{s=Math.max(0,Math.round(s||0));const h=Math.floor(s/3600),m=Math.fl
 let GEST=false;["pointerdown","keydown"].forEach(t=>addEventListener(t,()=>{GEST=true},{capture:true,once:true}));
 const NSP={active:null,mount};window.NSPlay=NSP;
 function mount(box,o){
- if(box._nsp)box._nsp.destroy();const live=o.mode==="live",vs=DB.get("ns_vol",{v:80,m:false});let cc=0,muted=!GEST||vs.m;
+ try{window.NSTRACK&&window.NSTRACK(o)}catch(e){}if(box._nsp)box._nsp.destroy();const live=o.mode==="live",vs=DB.get("ns_vol",{v:80,m:false});let cc=0,muted=!GEST||vs.m;
  const url=st=>`https://www.youtube-nocookie.com/embed/${encodeURIComponent(o.id)}?autoplay=1&controls=0&disablekb=1&fs=0&modestbranding=1&rel=0&iv_load_policy=3&playsinline=1&enablejsapi=1&mute=${muted?1:0}&cc_load_policy=${cc}&start=${Math.max(0,Math.floor(st))}`;
  const pos0=()=>live&&o.startMs&&!o.ytlive?(Date.now()-o.startMs)/1e3:(o.start||0);
  const uiF=()=>live?`<div class="r"><span class="lb">&#9679; LIVE</span><b>${E(o.ch.n+" "+o.ch.name)}</b><span>${E(o.title)}</span>${o.endMs?`<span class="mu">${X.fmt(o.startMs)} &ndash; ${X.fmt(o.endMs)}</span>`:""}</div>
@@ -3244,17 +3257,17 @@ async function stepJob(j){const S=j.step;
   log(j,"TVmaze: "+d.name+(N(d.name)!==N(j.show)?" (you typed \u201c"+j.show+"\u201d, please verify this is the right show)":"")+", "+j.eps.length+" episodes"+(j.eps.some(e=>e.have)?", "+j.eps.filter(e=>e.have).length+" already in your library":""));
   if(!j.eps.length){j.status="error";j.error="TVmaze lists no numbered episodes for this show/season.";return}j.step="playlists";return}
  if(S==="playlists"){const want=j.eps.filter(e=>!e.have);if(!want.length){j.step="finish";return}let ids=[...(j.pls||[])];
-  let r={items:[]};try{r=await yt(j,"search",{part:"snippet",type:"playlist",maxResults:10,q:(j.vname||j.show)+" full episodes"},100)}catch(er){if(er.net)throw er;log(j,"Playlist search failed: "+er.message+" Continuing with single-video search.")}
+  let r={items:[]};try{r=await yt(j,"search",{part:"snippet",type:"playlist",maxResults:25,q:(j.vname||j.show)+" full episodes"},100)}catch(er){if(er.net)throw er;log(j,"Playlist search failed: "+er.message+" Continuing with single-video search.")}
   (r.items||[]).map(i=>({id:i.id&&i.id.playlistId,t:(i.snippet||{}).title||"",ch:(i.snippet||{}).channelTitle||""})).filter(p=>p.id&&N(p.t).includes(N(j.vname||j.show))).map(p=>Object.assign(p,{s:(/full/i.test(p.t)?2:0)+(isOfficial(j,p.ch)?3:0)})).sort((a,b)=>b.s-a.s).slice(0,3).forEach(p=>{if(!ids.includes(p.id)){ids.push(p.id);log(j,"Playlist: \u201c"+p.t+"\u201d by "+p.ch)}});
   j.pl=ids;j.pool=[];j.step="plitems";j.pi=0;return}
  if(S==="plitems"){if(j.pi>=j.pl.length){j.step="videos";return}const id=j.pl[j.pi];let tok="",n=0;
   try{for(let g=0;g<6;g++){const r=await yt(j,"playlistItems",{part:"snippet",maxResults:50,playlistId:id,...(tok?{pageToken:tok}:{})},1);(r.items||[]).forEach(v=>{const s=v.snippet||{},y=s.resourceId&&s.resourceId.videoId;if(y&&!/^(Private|Deleted) video$/.test(s.title||"")&&!j.pool.some(p=>p.id===y)){j.pool.push({id:y});n++}});tok=r.nextPageToken;if(!tok)break}}catch(er){if(er.net)throw er;log(j,"Playlist "+(j.pi+1)+" ("+id+") could not be read: "+er.message+". Skipped; individual video search continues.");j.pi++;return}
   log(j,"Read "+n+" videos from playlist "+(j.pi+1)+" of "+j.pl.length);j.pi++;return}
- if(S==="videos"){let r={items:[]};try{r=await yt(j,"search",{part:"snippet",type:"video",maxResults:50,q:(j.vname||j.show)+" full episode"},100)}catch(er){if(er.net&&!j.pool.length)throw er;log(j,"Video search failed: "+er.message)}(r.items||[]).forEach(i=>{const y=i.id&&i.id.videoId;if(y&&!j.pool.some(p=>p.id===y))j.pool.push({id:y})});log(j,"Pool: "+j.pool.length+" candidate videos");j.step="details";return}
+ if(S==="videos"){const nm=j.vname||j.show,sn=[...new Set(j.eps.map(e=>e.season).filter(Boolean))].slice(0,15),qs=[nm+" full episode",nm+" full episodes",nm+" full episode HD"].concat(sn.map(n=>nm+" season "+n+" full episode"));for(const q of qs){try{const r=await yt(j,"search",{part:"snippet",type:"video",maxResults:50,q},100);(r.items||[]).forEach(i=>{const y=i.id&&i.id.videoId;if(y&&!j.pool.some(p=>p.id===y))j.pool.push({id:y})})}catch(er){if(er.net&&!j.pool.length)throw er;log(j,"Video search failed ("+q+"): "+er.message)}}log(j,"Pool: "+j.pool.length+" candidate videos");j.step="details";return}
  if(S==="details"){const d=await details(j,j.pool.map(p=>p.id));const gone=j.pool.length-d.length;j.pool=d;if(gone)log(j,gone+" videos were unavailable and dropped");j.step="match";return}
  if(S==="match"){assign(j,j.pool);const f=j.eps.filter(e=>e.pick).length,w=j.eps.filter(e=>!e.have).length;log(j,"Matched "+f+" of "+w+" needed episodes from playlists/search results");j.pool=null;j.step="missing";j.mi=0;return}
  if(S==="missing"){const w=j.eps.filter(e=>!e.have&&!e.pick&&!e.tried);if(!w.length){j.step="finish";return}const e=w[0];e.tried=1;
-  try{const r=await yt(j,"search",{part:"snippet",type:"video",maxResults:10,q:(j.vname||j.show)+" "+e.name},100),d=await details(j,(r.items||[]).map(i=>i.id&&i.id.videoId).filter(Boolean));assign(j,d);if(!e.pick)log(j,"S"+e.season+" E"+e.number+" \u201c"+e.name+"\u201d: no confident match found")}
+  try{const r=await yt(j,"search",{part:"snippet",type:"video",maxResults:20,q:(j.vname||j.show)+" "+e.name+" full episode"},100),d=await details(j,(r.items||[]).map(i=>i.id&&i.id.videoId).filter(Boolean));assign(j,d);if(!e.pick)log(j,"S"+e.season+" E"+e.number+" \u201c"+e.name+"\u201d: no confident match found")}
   catch(er){if(er.budget){e.tried=0;log(j,"Search budget ("+j.budget+" units) reached. Remaining episodes were not searched.");j.step="finish";return}if(er.net){e.tried=0;throw er}e.err=String(er.message||er).slice(0,200);log(j,"S"+e.season+" E"+e.number+" search failed: "+e.err+" (press Search missing again to retry)")}return}
  if(S==="finish"){j.status="review";j.finished=Date.now();const w=j.eps.filter(e=>!e.have&&!e.missing);log(j,"DONE: "+w.filter(e=>e.pick).length+" found, "+w.filter(e=>!e.pick).length+" not found, "+j.units+" lookups");notify(j)}}
 function notify(j){const m="Research finished: "+(j.vname||j.show);try{say(m)}catch(e){}try{if(window.Notification&&Notification.permission==="granted")new Notification("NorthStar TV",{body:m})}catch(e){}}
@@ -3506,7 +3519,7 @@ async function guideFor(slug){const L=await plChannels(),c=slug?L.find(x=>x.slug
  const D=await plTimelines([c.id],360),tl=((D[0]||{}).timelines||[]).map(tlTitle).filter(x=>x.stop>Date.now()).slice(0,6);return{name:c.name,items:tl}}
 function guideHTML(g){if(!g.items.length)return"<p>Pluto's guide returned no upcoming programs for this channel.</p>";return`<b>${esc(g.name)} - Pluto TV guide</b><table>${g.items.map((x,i)=>`<tr><td>${i?"":"<b>NOW</b>"}</td><td>${tm(x.start)}&ndash;${tm(x.stop)}</td><td><b>${esc(x.title)}</b>${x.ep?" &middot; "+esc(x.ep):""}</td></tr>`).join("")}</table>`}
 const guideErr=(e,url)=>`<p>Pluto's program guide could not be loaded in this browser (${esc(e.message||e)}). Pluto may refuse requests from other websites. <a href="${esc(url)}" target="_blank" rel="noopener noreferrer" style="color:#ffe600">Open the live guide on Pluto TV</a>.</p>`;
-function frameHTML(url){return`<iframe class="pluto-player" src="${esc(url)}" allowfullscreen allow="autoplay; encrypted-media" frameborder="0" title="Pluto TV"></iframe><p style="margin:8px 0 0;color:#d6cfe8">If the player above is blank, Pluto TV is refusing to be shown inside other websites (a rule set by Pluto, not by NorthStar). <a class="btn" href="${esc(url)}" target="_blank" rel="noopener noreferrer">Open on Pluto TV</a> Pluto plays its own ads and keeps its own branding.</p>`}
+function frameHTML(url){return`<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:0 0 8px;padding:10px 12px;background:#1c1630;border-radius:10px"><a class="btn" href="${esc(url)}" target="_blank" rel="noopener noreferrer" data-testid="pluto-open">&#9654; Watch this channel on Pluto TV</a><span style="color:#d6cfe8;font-size:13px">Pluto controls whether its player can appear inside other sites. If the box below stays blank, use this button.</span></div><iframe class="pluto-player" src="${esc(url)}" allowfullscreen allow="autoplay; encrypted-media" frameborder="0" title="Pluto TV"></iframe><p style="margin:8px 0 0;color:#d6cfe8">If the player above is blank, Pluto TV is refusing to be shown inside other websites (a rule set by Pluto, not by NorthStar). <a class="btn" href="${esc(url)}" target="_blank" rel="noopener noreferrer">Open on Pluto TV</a> Pluto plays its own ads and keeps its own branding.</p>`}
 function mount(box,ch){const slug=slugFor(ch),url=plUrl(slug);box.style.aspectRatio="auto";box.innerHTML=`<div class="plw">${frameHTML(url)}<div class="plg">Loading Pluto's guide...</div></div>`;
  const run=()=>{const g=box.querySelector(".plg");if(!g||!box.isConnected||box.dataset.plu!==String(ch.n))return;(slug?guideFor(slug):Promise.reject(new Error("no Pluto channel is assigned to this NorthStar channel yet"))).then(x=>{if(box.isConnected&&box.dataset.plu===String(ch.n))g.innerHTML=guideHTML(x)}).catch(e=>{g.innerHTML=guideErr(e,url)})};
  run();clearInterval(box._plt);box._plt=setInterval(()=>{if(!box.isConnected||box.dataset.plu!==String(ch.n)){clearInterval(box._plt);return}run()},6e4)}
@@ -3811,10 +3824,36 @@ async function sync(email,pw,name){if(!C())return{ok:false};try{let r=await auth
  keep(r.j,email);const pr=await prof();if(pr&&pr.status==="suspended")return{blocked:true,msg:"This account is suspended. Please contact support."};return{ok:r.ok,prof:pr}}catch(e){return{ok:false}}}
 /* admin-set premium unlocks every channel; admin downgrade removes only what the admin granted (PayPal plans are left alone) */
 function apply(u,pr){if(!u||!pr)return;if(pr.tier==="premium"){u.tvt=Math.max(u.tvt||0,1);u.sbPrem=1;u.tvEnd=0}else if(u.sbPrem){u.tvt=0;u.sbPrem=0}}
-window.NSAUTH={sync,prof,apply,out:()=>{try{localStorage.removeItem(K)}catch(e){}}};
+/* Premium enforcement: video IDs of items used ONLY on paid channels (n>150) are removed from the public lineup and stored in ns_premium (readable by paid users and admins only). */
+function split(s){const ch=s.channels||[],prem=new Set(ch.filter(c=>c.n>150&&c.n!==2).map(c=>c.n)),uF=new Set(),uP=new Set();
+ Object.keys(s.schedules||{}).forEach(n=>(s.schedules[n]||[]).forEach(x=>(prem.has(+n)?uP:uF).add(x.lib)));
+ (s.library||[]).forEach(x=>(x.chs||[]).forEach(n=>(prem.has(+n)?uP:uF).add(x.id)));
+ const data={yt:{},at:s.at};s.library=(s.library||[]).map(x=>{if(!x.yt||!uP.has(x.id)||uF.has(x.id))return x;data.yt[x.id]=x.yt;return Object.assign({},x,{yt:"",lock:1})});return data}
+async function premium(){const c=C(),t=await tok();if(!c||!t)return null;try{const r=await fetch(c.url+"/rest/v1/ns_premium?id=eq.main&select=data",{headers:{apikey:c.anon,Authorization:"Bearer "+t},cache:"no-store"});const j=await r.json();return r.ok&&j&&j[0]&&j[0].data||null}catch(e){return null}}
+window.NSAUTH={split,premium,sync,prof,apply,out:()=>{try{localStorage.removeItem(K)}catch(e){}}};
 })();
 </script>
 
+<script id="ns-unmute">
+/* Browsers only allow autoplay when muted. When Channel 2 (or any channel) starts muted, show one clear button that turns the sound on. */
+(function(){"use strict";setInterval(function(){try{
+ var st=document.getElementById("tvst"),P=window.NSPlay&&window.NSPlay.active,b=document.getElementById("ns-unm");
+ if(!st||!P||!P.S||P.S.mu!==true){if(b)b.remove();return}
+ if(b)return;b=document.createElement("button");b.id="ns-unm";b.type="button";b.textContent="\uD83D\uDD0A Tap for sound";
+ b.setAttribute("style","position:absolute;top:14px;right:14px;z-index:6;background:#d4af37;color:#06171d;border:0;border-radius:99px;padding:10px 18px;font:700 15px system-ui,sans-serif;cursor:pointer;box-shadow:0 4px 18px rgba(0,0,0,.45)");
+ b.onclick=function(){try{P.mute()}catch(e){}b.remove()};st.appendChild(b)}catch(e){}},1000)})();
+</script>
+<script id="ns-track">
+/* Records real plays into Supabase ns_view_events (feeds the Trending panel in #console). Anonymous, no personal data.
+   Skips admin sessions, and counts the same program at most once per 30 minutes per browser. */
+(function(){"use strict";var K="ns_played";
+window.NSTRACK=function(o){try{var S=window.NSSB,c=S&&S.cfg();if(!c||!c.ok||!o||!o.id||S.jwt())return;
+ var ref=String(o.id).slice(0,120),m={};try{m=JSON.parse(localStorage.getItem(K)||"{}")}catch(e){}
+ var now=Date.now();if(m[ref]&&now-m[ref]<18e5)return;m[ref]=now;Object.keys(m).forEach(function(k){if(now-m[k]>864e5)delete m[k]});try{localStorage.setItem(K,JSON.stringify(m))}catch(e){}
+ fetch(c.url+"/rest/v1/ns_view_events",{method:"POST",keepalive:true,headers:{apikey:c.anon,Authorization:"Bearer "+c.anon,"Content-Type":"application/json",Prefer:"return=minimal"},
+  body:JSON.stringify({kind:"episode",ref:ref,title:String(o.title||"").slice(0,200)})}).catch(function(){})}catch(e){}};
+})();
+</script>
 <style id="nsc-css">
 #nsc{position:fixed;inset:0;z-index:99999;display:grid;grid-template-columns:232px 1fr 300px;grid-template-rows:60px 1fr;background:#06171d;color:#e6f0ef;font:14px/1.45 'Bricolage Grotesque',system-ui,sans-serif}
 #nsc[hidden]{display:none}#nsc *{box-sizing:border-box}
@@ -3844,10 +3883,10 @@ window.NSAUTH={sync,prof,apply,out:()=>{try{localStorage.removeItem(K)}catch(e){
 <script id="nsc-js">
 (function(){"use strict";const S=window.NSSB,R=document.getElementById("nsc");if(!S||!R)return;
 const E=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const D={stats:null,acc:[],trend:null,ch:null,live:null,err:{}};let sec="dash",q="",flt="all",sk="created_at",sd=-1,pg=0;const PS=10;
+const D={sv:null,stats:null,acc:[],trend:null,ch:null,live:null,err:{}};let sec="dash",q="",flt="all",sk="created_at",sd=-1,pg=0;const PS=10;
 const rpc=(n,b)=>S.req("/rest/v1/rpc/"+n,{method:"POST",auth:1,body:b||{}});
 async function load(){const t=[["stats",()=>rpc("ns_stats")],["acc",()=>S.req("/rest/v1/ns_profiles?select=*&order=created_at.desc&limit=2000",{auth:1})],["trend",()=>rpc("ns_trending",{p_days:7})],
- ["ch",async()=>{const r=await S.read("ns_lineup","snapshot");return r&&r.snapshot&&r.snapshot.channels||[]}],["live",async()=>{const r=await S.read("ns_live","live");return r&&r.live}]];
+ ["ch",async()=>{const r=await S.read("ns_lineup","snapshot");return r&&r.snapshot&&r.snapshot.channels||[]}],["live",async()=>{const r=await S.read("ns_live","live");return r&&r.live}],["sv",async()=>{const r=await S.read("ns_streaming","data",{auth:true});return r&&r.data||{queue:[]}}]];
  D.err={};await Promise.all(t.map(async([k,f])=>{try{D[k]=await f()}catch(e){D.err[k]=e.message}}));draw()}
 function login(){R.innerHTML=`<div class="lg"><h2 style="font-family:Newsreader,serif;color:#d4af37;margin:0 0 8px">NorthStar Admin</h2><p style="opacity:.7">Sign in with a Supabase account listed in ns_admins. Permissions are enforced by the database.</p><input id="e" type="email" placeholder="Email" autocomplete="username"><input id="p" type="password" placeholder="Password" autocomplete="current-password"><button class="btn" id="go">Sign in</button> <a href="#home" style="margin-left:10px;color:#9fb8b8">Back to site</a><p class="err" id="m"></p></div>`;
  R.querySelector("#go").onclick=async()=>{const m=R.querySelector("#m");m.textContent="Signing in...";try{await S.signIn(R.querySelector("#e").value.trim(),R.querySelector("#p").value);load()}catch(e){m.textContent=e.message}}}
@@ -3867,13 +3906,30 @@ function dash(){const s=D.stats||{},ch=D.ch||[],on=ch.filter(c=>c.on!==false),lv
  <div class="c"><h3 style="margin:0 0 10px">Users</h3>${accTable(false)}</div>`}
 function side(){const t=D.trend;const mx=t&&t[0]?t[0].plays:1;
  return`<h3 style="margin:0 0 10px">Trending Movies &amp; Shows</h3>${D.err.trend?`<p class="err">${E(D.err.trend)}</p>`:!t||!t.length?'<div class="tr" style="opacity:.7">No viewing data yet. Rankings appear once the player records plays into ns_view_events.</div>':t.map((x,i)=>`<div class="tr"><b>#${i+1} ${E(x.title||x.ref)}</b><div style="opacity:.7;font-size:12px">${E(x.kind)} · ${x.plays} plays · ${x.plays_today} today</div><div class="bar"><i style="width:${Math.round(x.plays/mx*100)}%"></i></div></div>`).join("")}`}
+const PROV=[["Amazon Prime Video","No public API lets another site list or play a customer's library. Playback only works inside Amazon's own apps under DRM. Purchases and Prime titles are personal-use licenses."],
+["Google TV (Play Movies)","Purchases play only in Google's own apps. There is no public library or playback API for third parties, and the license is personal use."],
+["Movies Anywhere","Syncs your purchases between stores for your own viewing. It has no developer API for third-party playback and no public-performance rights."],
+["Apple TV","Purchased movies and shows play only in Apple's apps under FairPlay DRM. No supported way for another service to play or retransmit them."]];
+const HOW=[["owned","I own the rights"],["licensed","Licensed for broadcast"],["purchased","Purchased from a store"],["rented","Rented"],["subscription","Subscription title"]];
+function stream(){const q=(D.sv&&D.sv.queue)||[];const lic=h=>h==="owned"||h==="licensed";
+ return`<div class="c" style="margin-bottom:14px"><h3 style="margin:0 0 6px">What these services allow</h3><p style="opacity:.75;margin:0 0 10px">Signing in to a store on NorthStar would only log you in to that store. None of these offer a way to play or rebroadcast their titles on another network, and NorthStar will not bypass DRM. A store purchase does not include public broadcasting rights. Verify current terms with each provider.</p>
+ <table>${PROV.map(p=>`<tr><td style="white-space:nowrap"><b>${E(p[0])}</b></td><td>${E(p[1])}</td><td><span class="pill x">No official connection</span></td></tr>`).join("")}</table></div>
+ <div class="c" style="margin-bottom:14px"><h3 style="margin:0 0 6px">Submit programming for approval</h3><p style="opacity:.75;margin:0 0 10px">Use this for any movie or special event you want to air. Only titles you own or are licensed to broadcast can be approved. Then add the title in Control Center &gt; Library (Rights: "I own it" or "Licensed") and schedule it on any channel.</p>
+ <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px"><input id="svt" placeholder="Title (e.g. a Christmas movie)"><select id="svp"><option>Own file or license</option>${PROV.map(p=>`<option>${E(p[0])}</option>`).join("")}<option>Other</option></select><select id="svh">${HOW.map(h=>`<option value="${h[0]}">${h[1]}</option>`).join("")}</select><input id="svn" placeholder="Proof of rights (license, contract, notes)"></div><p style="margin:10px 0 0"><button class="btn" id="svadd">Submit</button> <span class="err" id="svm"></span></p></div>
+ <div class="c"><h3 style="margin:0 0 10px">Approval queue</h3>${D.err.sv?`<p class="err">${E(D.err.sv)}</p>`:""}<table><tr><th>Title</th><th>Source</th><th>How obtained</th><th>Status</th><th>Actions</th></tr>
+ ${q.map(x=>`<tr><td>${E(x.title)}<div style="opacity:.6;font-size:12px">${E(x.note)}</div></td><td>${E(x.provider)}</td><td>${E(x.how)}</td><td><span class="pill ${x.status==="approved"?"":"x"}">${E(x.status)}</span></td><td>${lic(x.how)&&x.status!=="approved"?`<button class="btn s" data-sa="${E(x.id)}">Approve</button> `:""}${!lic(x.how)?`<span style="opacity:.7;font-size:12px">Needs distribution license</span> `:""}<button class="btn s" data-sd="${E(x.id)}">Remove</button></td></tr>`).join("")||'<tr><td colspan="5" style="opacity:.6">Nothing submitted yet.</td></tr>'}</table></div>`}
+async function svSave(mut){const cur=await S.read("ns_streaming","data",{auth:true}),d=(cur&&cur.data)||{queue:[]};d.queue=d.queue||[];mut(d);await S.write("ns_streaming","data",d);const b=await S.read("ns_streaming","data",{auth:true});D.sv=b&&b.data||d;draw()}
 function draw(){if(!S.jwt()){login();return}
- const nav=[["dash","Dashboard"],["users","Users & Accounts"]];
+ const nav=[["dash","Dashboard"],["users","Users & Accounts"],["stream","Streaming Services"]];
  R.innerHTML=`<aside class="sb"><div class="br">★ NorthStar TV</div>${nav.map(([k,l])=>`<button data-k="${k}" class="${sec===k?"on":""}">${l}</button>`).join("")}<hr style="border-color:#16404b"><a href="#admin">Channels, Guide, Scheduler, Pluto, Ads, AI imports (existing admin)</a><a href="#tv">Live TV</a><a href="#home">Exit to site</a></aside>
  <header class="tb"><input id="gq" placeholder="Search accounts..." value="${E(q)}"><span style="flex:1"></span><span>${E(S.who())}</span><button class="btn s" id="rf">Refresh</button><button class="btn s" id="so">Sign out</button></header>
- <main class="mn">${sec==="dash"?dash():`<div class="c"><h3 style="margin:0 0 10px">Users &amp; Accounts</h3>${accTable(true)}</div>`}</main><aside class="rt">${side()}</aside>`;wire()}
+ <main class="mn">${sec==="dash"?dash():sec==="stream"?stream():`<div class="c"><h3 style="margin:0 0 10px">Users &amp; Accounts</h3>${accTable(true)}</div>`}</main><aside class="rt">${side()}</aside>`;wire()}
 async function setAcc(id,tier,st){const u=D.acc.find(x=>x.id===id);try{const r=await rpc("ns_admin_set_account",{p_id:id,p_tier:tier,p_status:st,p_access:null});Object.assign(u,r);draw()}catch(e){alert("Not saved: "+e.message)}}
-function wire(){R.querySelectorAll(".sb [data-k]").forEach(b=>b.onclick=()=>{sec=b.dataset.k;pg=0;draw()});
+function wire(){const sa=R.querySelector("#svadd");if(sa)sa.onclick=async()=>{const t=R.querySelector("#svt").value.trim(),m=R.querySelector("#svm");if(!t){m.textContent="Enter a title.";return}const how=R.querySelector("#svh").value;
+  try{await svSave(d=>d.queue.push({id:"q"+Date.now().toString(36),title:t.slice(0,160),provider:R.querySelector("#svp").value,how:how,note:R.querySelector("#svn").value.slice(0,300),status:(how==="owned"||how==="licensed")?"pending approval":"blocked: needs distribution license",at:Date.now()}))}catch(e){m.textContent="Not saved: "+e.message}};
+ R.querySelectorAll("[data-sa]").forEach(b=>b.onclick=()=>svSave(d=>{const x=d.queue.find(y=>y.id===b.dataset.sa);if(x)x.status="approved"}).catch(e=>alert("Not saved: "+e.message)));
+ R.querySelectorAll("[data-sd]").forEach(b=>b.onclick=()=>svSave(d=>{d.queue=d.queue.filter(y=>y.id!==b.dataset.sd)}).catch(e=>alert("Not saved: "+e.message)));
+ R.querySelectorAll(".sb [data-k]").forEach(b=>b.onclick=()=>{sec=b.dataset.k;pg=0;draw()});
  const on=(sel,f)=>{const e=R.querySelector(sel);if(e)e.onclick=f};on("#rf",load);on("#so",()=>{S.signOut();draw()});on("#pv",()=>{pg=Math.max(0,pg-1);draw()});on("#nx",()=>{pg++;draw()});
  R.querySelectorAll("th[data-s]").forEach(h=>h.onclick=()=>{sd=sk===h.dataset.s?-sd:1;sk=h.dataset.s;draw()});
  const sq=R.querySelector("#sq"),gq=R.querySelector("#gq");[sq,gq].forEach(i=>{if(i)i.oninput=()=>{q=i.value.toLowerCase();pg=0;const p=i.selectionStart;draw();const n=R.querySelector("#"+i.id);if(n){n.focus();n.setSelectionRange(p,p)}}});
