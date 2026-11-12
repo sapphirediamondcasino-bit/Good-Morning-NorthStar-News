@@ -4411,6 +4411,83 @@ function validate(file,kind,item){const r=[];
 window.NSIA={search,inspect,validate,rights,minTvSeconds:MIN_TV_SEC};
 })();
 </script>
+<script id="ns-ia-research">
+/* NorthStar Internet Archive research panel (inside Admin > AI Research). Uses window.NSIA (search + inspect only).
+   Rights-review queue: nothing here ever airs anything. Approval only records an administrator's decision plus the source URL and history.
+   Library items still need a playable video link (yt) to be schedulable, so IA items cannot auto-schedule from this panel. */
+(function(){"use strict";const X=window.NSX,A=window.NSIA;if(!X||!A)return;
+const E=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const KEY="ia_queue",Q=()=>{const q=X.D.get(KEY,[]);return Array.isArray(q)?q:[]},saveQ=q=>X.D.set(KEY,q);
+const S={kind:"tv",q:"",busy:"",msg:"",err:"",results:null,item:null,runs:{}};
+const COLL=["classic_tv","prelinger","ephemera","classic_cartoons","television"];
+const mins=s=>s>0?Math.round(s/60)+" min":"unknown";
+const safeUrl=u=>/^https:\/\/archive\.org\//.test(u)?u:"#";
+const tag=(t,c)=>`<span class="tag ${c||"n"}">${E(t)}</span>`;
+function paint(){const r=S.root;if(!r||!r.isConnected)return;const h=S.host;h.innerHTML=html();bind(h)}
+function html(){const q=Q(),pend=q.filter(x=>x.status==="pending"),done=q.filter(x=>x.status!=="pending");
+ return `<hr><h2 style="font:700 28px Newsreader,serif">Internet Archive research</h2>
+ <p class="mute" style="max-width:75ch">Search Internet Archive, inspect an item, and send eligible files to the rights-review queue. <b>An upload being public is not broadcast permission.</b> Items with no open license or known open collection stay restricted and can only be rejected. Approval here records your decision; it does not put anything on air.</p>
+ <div class="row"><select id="iak" style="max-width:150px;margin:0"><option value="tv" ${S.kind==="tv"?"selected":""}>TV / movies</option><option value="music" ${S.kind==="music"?"selected":""}>Music</option></select>
+ <input id="iaq" value="${E(S.q)}" placeholder="Search, or paste an archive.org link" style="max-width:340px;margin:0"><button class="btn" data-ia="search" ${S.busy?"disabled":""}>Search</button>
+ <span class="mute">Collections to explore:</span>${COLL.map(c=>`<button class="btn alt" data-ia="coll" data-v="${c}">${c}</button>`).join("")}
+ <span class="mute">${E(S.busy)}</span></div>
+ ${S.err?`<div class="warn">${E(S.err)}</div>`:""}${S.msg?`<div class="note">${E(S.msg)}</div>`:""}
+ ${S.results?resultsHTML():""}${S.item?itemHTML(S.item):""}
+ <h3>Rights-review queue (${pend.length} waiting)</h3>${queueHTML(pend)}
+ ${done.length?`<h3>Decisions (${done.length})</h3>${queueHTML(done)}`:""}`}
+function resultsHTML(){const r=S.results;if(!r.length)return'<p class="mute">No results.</p>';
+ return `<table><tr><th>Title</th><th>Collections</th><th>License field</th><th></th></tr>${r.map(x=>`<tr><td>${E(x.title||x.id)}<br><small class="mute">${E(x.creator)} ${E(x.date)} &middot; ${E(x.id)}</small></td><td><small>${E(x.collections.slice(0,4).join(", "))}</small></td><td>${x.licenseurl?`<small>${E(x.licenseurl)}</small>`:'<small class="mute">none</small>'}</td><td><button class="btn alt" data-ia="inspect" data-v="${E(x.id)}">Inspect</button></td></tr>`).join("")}</table>`}
+function itemHTML(it){const rs=it.rights,ok=rs.status==="review-eligible",kind=S.itemKind||S.kind,inq=Q().find(x=>x.id==="ia:"+it.id);
+ return `<div class="card" style="margin:12px 0"><div class="row" style="align-items:flex-start"><img src="${E(it.artwork)}" alt="" width="120" style="border-radius:6px;max-height:90px;object-fit:cover" onerror="this.style.display='none'">
+ <div><b style="font-size:18px">${E(it.title)}</b> ${tag(ok?"Eligible for review":"Restricted: not cleared",ok?"n":"f")} ${it.available?"":tag("Unavailable","f")}<br>
+ <small class="mute">${E(it.creator)} ${E(it.date)} &middot; collections: ${E(it.collections.join(", "))}</small><br>
+ <a href="${E(safeUrl(it.url))}" target="_blank" rel="noopener noreferrer">${E(it.url)}</a></div></div>
+ <p><b>Rights:</b> ${E(rs.why)}</p>${it.licenseurl?`<p><b>License URL:</b> ${E(it.licenseurl)}</p>`:"<p><b>License URL:</b> none on the item</p>"}
+ ${it.description?`<p class="mute">${E(it.description)}</p>`:""}
+ ${inq?`<p>${tag("Already in queue: "+inq.status)}</p>`:""}
+ <table><tr><th>Add</th><th>File</th><th>S/E</th><th>Verified runtime</th><th>Check</th></tr>${it.files.map((f,i)=>{const v=A.validate(f,kind,it),canAdd=ok&&it.available&&(kind==="music"||(f.runtimeKnown&&f.seconds>=A.minTvSeconds&&!/\b(trailer|teaser|promo|clip|highlight|reaction|review|recap|sample|preview|behind the scenes)\b/i.test(f.file)));
+ return `<tr><td><input type="checkbox" data-ia-f="${i}" ${canAdd&&!(S.runs.sel&&S.runs.sel[i]===false)?"checked":""} ${canAdd?"":"disabled"} style="width:auto;margin:0"></td><td><small>${E(f.file)}</small><br><small class="mute">${E(f.format)}</small></td><td>${f.season!=null?"S"+f.season+"E"+f.episode:""}</td><td>${f.runtimeKnown?mins(f.seconds):tag("unknown","f")}</td><td>${v.ok?tag("passes checks"):`<small>${E(v.reasons.join("; "))}</small>`}</td></tr>`}).join("")||'<tr><td colspan="5" class="mute">No playable files found.</td></tr>'}</table>
+ ${ok?`<div class="row"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="iaconf" style="width:auto;margin:0"> I confirmed this item's license permits broadcast use.</label><input id="iano" placeholder="Rights note (required: what you checked)" style="max-width:340px;margin:0"><button class="btn" data-ia="queue">Send checked files to review queue</button></div>`:`<p class="mute">This item cannot be queued for approval. Keep it restricted, or reject it below so it is not offered again.</p><button class="btn alt" data-ia="rejectitem">Record as rejected</button>`}
+ <button class="btn alt" data-ia="closeitem">Close</button></div>`}
+function queueHTML(l){if(!l.length)return'<p class="mute">Nothing here.</p>';
+ return l.map(x=>`<div class="card" style="margin:8px 0"><div class="row"><b>${E(x.title)}</b>${tag(x.status,x.status==="rejected"?"f":"n")}${tag(x.rightsStatus,x.rightsStatus==="review-eligible"?"n":"f")}<span class="mute">${x.files.length} file(s)</span></div>
+ <small><a href="${E(safeUrl(x.sourceUrl))}" target="_blank" rel="noopener noreferrer">${E(x.sourceUrl)}</a>${x.licenseurl?" &middot; "+E(x.licenseurl):""}</small>
+ <div class="mute"><small>${E(x.rightsWhy)}</small></div>
+ ${x.files.map(f=>`<div><small>${E(f.file)} &middot; ${mins(f.seconds)}${f.season!=null?" &middot; S"+f.season+"E"+f.episode:""}</small></div>`).join("")}
+ <details><summary class="mute">History (${x.history.length})</summary>${x.history.map(h=>`<div><small>${new Date(h.at).toLocaleString()} &middot; ${E(h.action)}${h.note?": "+E(h.note):""}</small></div>`).join("")}</details>
+ <div class="row">${x.status==="pending"?`<button class="btn" data-ia="approve" data-v="${E(x.id)}">Approve</button><button class="btn alt" data-ia="reject" data-v="${E(x.id)}">Reject</button>`:`<button class="btn alt" data-ia="reopen" data-v="${E(x.id)}">Move back to review</button>`}<button class="btn alt" data-ia="drop" data-v="${E(x.id)}">Remove</button></div></div>`).join("")}
+async function doSearch(q){S.q=q;S.err="";S.msg="";if(!q.trim()){S.err="Type a search or paste a link first.";return paint()}
+ const lk=/^https?:\/\/(?:www\.)?archive\.org\/(?:details|embed|download)\/([A-Za-z0-9._-]+)/i.exec(q.trim());if(lk)return doInspect(lk[1]);
+ S.busy="Searching Internet Archive...";paint();try{S.results=await A.search(q.trim(),S.kind);S.msg=S.results.length+" result(s). Results are not rights-checked until you inspect an item."}catch(e){S.err=e.message;S.results=null}S.busy="";paint()}
+async function doInspect(id){S.err="";S.msg="";S.busy="Inspecting "+id+"...";paint();try{S.item=await A.inspect(id);S.itemKind=S.kind;S.runs.sel=null}catch(e){S.err=e.message}S.busy="";paint()}
+function note(x,action,n){x.history.push({at:Date.now(),action,note:n||""})}
+function bind(h){h.onclick=e=>{const b=e.target.closest("[data-ia]");if(!b)return;const a=b.dataset.ia,v=b.dataset.v,q=Q(),x=q.find(y=>y.id===v);
+ if(a==="search"){S.kind=h.querySelector("#iak").value;doSearch(h.querySelector("#iaq").value)}
+ else if(a==="coll"){S.kind=h.querySelector("#iak").value;doSearch("collection:"+v)}
+ else if(a==="inspect")doInspect(v);
+ else if(a==="closeitem"){S.item=null;paint()}
+ else if(a==="rejectitem"){const it=S.item;if(!it)return;const id="ia:"+it.id;if(!q.find(y=>y.id===id)){const e2={id,source:"internet-archive",title:it.title,sourceUrl:it.url,licenseurl:it.licenseurl,collections:it.collections,rightsStatus:it.rights.status,rightsWhy:it.rights.why,kind:S.itemKind||S.kind,files:[],status:"rejected",history:[]};note(e2,"rejected","Restricted or not cleared; recorded so it is not offered as eligible");q.unshift(e2);saveQ(q)}S.item=null;S.msg="Recorded as rejected.";paint()}
+ else if(a==="queue"){const it=S.item;if(!it)return;const rn=h.querySelector("#iano").value.trim();
+  if(it.rights.status!=="review-eligible")return say("This item is restricted and cannot be queued.");
+  if(!h.querySelector("#iaconf").checked)return say("Tick the box to confirm the license permits broadcast use.");if(!rn)return say("Write the rights note first.");
+  const sel=[...h.querySelectorAll("[data-ia-f]")].filter(c=>c.checked&&!c.disabled).map(c=>it.files[+c.dataset.iaF]);
+  const kind=S.itemKind||S.kind,okf=sel.filter(f=>A.validate(f,kind,it).ok);
+  if(!okf.length)return say("Check at least one file that passes the runtime and rights checks.");
+  const id="ia:"+it.id,ex=q.find(y=>y.id===id);
+  if(ex){const have=new Set(ex.files.map(f=>f.file));okf.forEach(f=>{if(!have.has(f.file))ex.files.push(f)});ex.status="pending";ex.rightsNote=rn;note(ex,"re-queued",rn)}
+  else{const n={id,source:"internet-archive",title:it.title,creator:it.creator,sourceUrl:it.url,artwork:it.artwork,licenseurl:it.licenseurl,collections:it.collections,rightsStatus:it.rights.status,rightsWhy:it.rights.why,rightsNote:rn,kind,files:okf.map(f=>({file:f.file,url:f.url,format:f.format,seconds:f.seconds,season:f.season,episode:f.episode})),status:"pending",history:[]};note(n,"queued",rn);q.unshift(n)}
+  saveQ(q);S.item=null;S.msg=okf.length+" file(s) sent to the review queue. Nothing is scheduled.";paint()}
+ else if(x){
+  if(a==="approve"){if(x.rightsStatus!=="review-eligible")return say("Restricted items cannot be approved.");if(!x.files.length)return say("No eligible files on this item.");
+   if(!confirm("You are confirming this item's license permits NorthStar to broadcast it. Approve?"))return;x.status="approved";note(x,"approved",x.rightsNote||"");saveQ(q);S.msg="Approved. The decision, source URL and history are saved. It is not scheduled and has no player link yet.";paint()}
+  else if(a==="reject"){const r=prompt("Reason for rejecting (optional):","")||"";x.status="rejected";note(x,"rejected",r);saveQ(q);paint()}
+  else if(a==="reopen"){x.status="pending";note(x,"moved back to review","");saveQ(q);paint()}
+  else if(a==="drop"){if(confirm("Remove this record and its history?")){saveQ(q.filter(y=>y!==x));paint()}}}};
+ const k=h.querySelector("#iaq");if(k)k.onkeydown=e=>{if(e.key==="Enter")h.querySelector('[data-ia="search"]').click()}}
+window.NSIAResearch={queue:Q,state:S};
+try{const old=X.ccDraw();X.setDraw(function(sec){old(sec);if(X.tab()!=="research")return;const body=sec.querySelector("#rjroot");if(!body)return;let h=body.querySelector("#iaroot");if(!h){h=document.createElement("div");h.id="iaroot";body.appendChild(h)}S.root=body;S.host=h;paint()});if(/^#(admin|tvadmin)/.test(location.hash)&&typeof route==="function")route()}catch(e){console.warn("IA research panel",e)}
+})();
+</script>
 <script id="ns-public-profiles">
 /* Public profiles on Supabase (ns_public_profiles view + ns_upsert_my_profile). Tried first; if Supabase is unconfigured,
    the viewer is not signed in, or a call fails, the site falls back to its original /api behaviour. Email is never read here. */
