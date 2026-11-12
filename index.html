@@ -2187,7 +2187,11 @@ const MINRUN=22,PROG_EX=/^(commercial|trailer|intro|music|bumper|promo|filler|sp
 const aiSrc=x=>!!(x&&(x.ai||x.imp||/^(ai|import)/i.test(x.src||"")));
 const runWhy=x=>{if(!x||!aiSrc(x)||PROG_EX.test(x.type||""))return"";if(x.est||!(+x.dur>0))return"Runtime not verified";if(x.runOk)return"";if(+x.dur<MINRUN)return"Under "+MINRUN+" minutes ("+Math.round(x.dur)+" min)";if(AIBAD.test(x.title||""))return"Title looks like a clip, trailer or review";return""};
 window.NSRULE={min:MINRUN,why:runWhy,ai:aiSrc};
-const schedulable=x=>x&&!x.adOff&&x.rights&&x.rights!=="pending"&&(+x.dur>0)&&!x.est&&!x.bad&&yid(x.yt)&&(!x.fake||x.okreal)&&(!x.rterr||x.rtv)&&!runWhy(x);
+/* Internet Archive items: playable only when an administrator approved them (rights note + queue id stored ON the library item, so published viewers see the same decision) and the URL is a real archive.org download link. */
+const IA_URL=/^https:\/\/archive\.org\/download\/[A-Za-z0-9._-]+\/[^\s"'<>]+$/;
+const iaQ=(()=>{let t=0,s=null;return id=>{const n=Date.now();if(!s||n-t>1500){t=n;s={};try{(D.get("ia_queue",[])||[]).forEach(r=>{s[r.id]=r.status})}catch(e){}}return s[id]}})();
+const iaOk=x=>{const a=x&&x.ia;if(!a||a.approved!==true||!IA_URL.test(String(a.url||""))||!a.rightsNote||!a.queueId)return false;const st=iaQ(a.queueId);return st===undefined||st==="approved"};
+const schedulable=x=>x&&!x.adOff&&x.rights&&x.rights!=="pending"&&(+x.dur>0)&&!x.est&&!x.bad&&(yid(x.yt)||iaOk(x))&&(!x.fake||x.okreal)&&(!x.rterr||x.rtv)&&!runWhy(x);
 const TIERS0=[{id:0,name:"Free",price:0,perks:"All free channels. No login needed to watch."},{id:1,name:"Plus",price:5,perks:"Plus premium channels and a premium badge."},{id:2,name:"Premier",price:10,perks:"Everything in Plus, plus Premier channels and early looks."},{id:3,name:"Elite",price:15,perks:"Everything in Premier, plus Elite channels and exclusive premieres."},{id:4,name:"Ultimate",price:20,perks:"Everything in Elite, plus Ultimate channels and priority features. HD and higher quality will be offered here when available."}];
 const tiers=()=>D.get("tiers",TIERS0);
 /* ---- 300-channel lineup: Minnesota, actor & crew, era/genre and themed channels. New channels stay out of viewers' guides until they have programming. ---- */
@@ -2516,7 +2520,7 @@ const cs=document.createElement("style");cs.textContent=`.ccnav{display:flex;gap
 const TABS=[["home","Home"],["lib","Library"],["music","Music"],["series","TV Shows"],["sched","Schedule"],["chan","Channels"],["auto","Auto-fill"],["chk","Link Checker"],["more","More"]];
 let TAB=D.get("cctab2","home"),PG=null,CMSG="",LQ="",LFL="all",LPG=0,LE=null,LSEL=new Set(),CQ="",CCAT="",CPG=0,CONLY=0,SPRE="",SCHV=0;
 const ch1=n=>chans().find(c=>c.n===n);
-const STAT=x=>x.bad?["bad","Can't air: "+x.bad]:x.fake&&!x.okreal?["fk","Check this: "+x.fake]:!yid(x.yt)?["wait","Needs a video link"]:x.rights==="pending"?["wait","Needs your OK to air"]:x.rterr&&!x.rtv?["wait","Length unknown: "+x.rterr]:!(x.dur>0)?["wait","Needs a length"]:["ok",x.est?"Ready (length is a guess)":"Ready"];
+const STAT=x=>x.bad?["bad","Can't air: "+x.bad]:x.fake&&!x.okreal?["fk","Check this: "+x.fake]:!yid(x.yt)&&!iaOk(x)?["wait","Needs a video link"]:x.rights==="pending"?["wait","Needs your OK to air"]:x.rterr&&!x.rtv?["wait","Length unknown: "+x.rterr]:!(x.dur>0)?["wait","Needs a length"]:["ok",x.est?"Ready (length is a guess)":"Ready"];
 /* ---- tells the real show or movie apart from discussions, reviews and fan videos (wording based; no API) ---- */
 const FAKE=/\b(reviews?|react(?:ion|ions|s|ing)?|explained|discussions?|discuss(?:es|ing)?|analysis|analy[sz]ing|breakdown|recaps?|theories|fan theory|theory explained|fan[- ]?(?:made|film|edit|fiction|cut|dub)|fanmade|parody|spoof|what if|alternate ending|reimagin\w*|top \d+|ranking|ranked|tier list|behind the scenes|podcast|commentary|ai[- ]generated|ai[- ]made|storyboard|animatic|compilation|clips?|montage|amv|easter eggs?|facts|things you missed|trivia|lore|rewatch|retrospective|roast|unboxing|gameplay|let'?s play|walkthrough|cosplay|mashup)\b/i;
 function fakeWhy(t,au,dur,type,est,x){const m=FAKE.exec(t||""),own=x?norm((x.series||"")+" "+(x.title||"")):"";if(m&&!(own&&own.includes(norm(m[0]))))return'the title says "'+m[0]+'", which usually means a discussion, review or fan video';if(/\b(fan|reviews?|reacts?|reactions?|explained|theor\w*|recaps?|clips|compilations?|edits|moments)\b/i.test(au||""))return'the channel "'+au+'" looks like a fan or commentary channel';if(type==="movie"&&dur>0&&dur<40&&!est)return"only "+dur+" minutes, too short for a full movie";return""}
@@ -2867,7 +2871,7 @@ TIPS.series="Every show with its seasons and episodes. Import a whole season fro
 window.NorthStarTV.series=SER;
 (function(){const s=document.createElement("style");s.textContent=".ccnav,.admnav{position:static!important}.ccbody textarea{min-height:90px}";document.head.appendChild(s)})();
 try{migrate();if(/^(tv|channels|tvguide|tvadmin|admin|live|broadcast)/.test(cur))route();else window.chrome()}catch(e){}
-window.NSX={expand,expandMan,toUTC,ymdCT,dow,chans,lib,saveLib,slots,saveSl,schedulable,allowed,vch,nowOn,tiers,tierOf,fmt,uid2,addDays,ytDurs,TABS,TIPS,RIGHTS,D,isAd,canWatch,ccDraw:()=>ccDraw,setDraw:f=>{ccDraw=f},tab:()=>TAB,player:()=>player,setPlayer:f=>{player=f},ytGet,AC};
+window.NSX={expand,expandMan,toUTC,ymdCT,dow,chans,lib,saveLib,slots,saveSl,schedulable,allowed,vch,nowOn,tiers,tierOf,fmt,uid2,addDays,ytDurs,TABS,TIPS,RIGHTS,D,isAd,canWatch,ccDraw:()=>ccDraw,setDraw:f=>{ccDraw=f},tab:()=>TAB,player:()=>player,setPlayer:f=>{player=f},ytGet,AC,iaOk};
 })();
 </script>
 <style id="ns2css">
@@ -2952,7 +2956,7 @@ addEventListener("keydown",e=>{if(/INPUT|TEXTAREA|SELECT/.test((e.target||{}).ta
 let gpL=0,gpT=setInterval(()=>{try{const g=(navigator.getGamepads?navigator.getGamepads():[])[0];if(!g||Date.now()-gpL<250)return;const M={12:"up",13:"down",14:"left",15:"right",0:"ok",1:"back"};for(const i in M)if(g.buttons[i]&&g.buttons[i].pressed){gpL=Date.now();act(M[i]);break}}catch(e){clearInterval(gpT)}},80);
 /* ---- On-Demand ---- */
 if(!PAGES.includes("ondemand"))PAGES.splice(PAGES.indexOf("live")+1,0,"ondemand");NAVL.ondemand="On-Demand";try{MENU[1][1].push(["ondemand","On-Demand"])}catch(e){}
-const art=it=>`https://i.ytimg.com/vi/${encodeURIComponent(it.yt)}/hqdefault.jpg`;
+const art=it=>it.yt?`https://i.ytimg.com/vi/${encodeURIComponent(it.yt)}/hqdefault.jpg`:((it.ia&&it.ia.artwork)||"");
 const lst=k=>DB.get(k+"_"+UK(),[]),tog=(k,id)=>{const L=lst(k),i=L.indexOf(id);i<0?L.push(id):L.splice(i,1);DB.set(k+"_"+UK(),L)};
 const card=(it,ser)=>{const ok=can(it),tn=(tiers().find(t=>t.id===need(it))||{}).name;const n=ser?catalog().filter(x=>x.series===ser).length:0;
  return`<div class="oc ${ok?"":"lk"}"><a href="#${ser?"odseries/"+encodeURIComponent(ser):"odwatch/"+it.id}"><img loading="lazy" src="${art(it)}" alt="${H2(ser||it.title)}"></a>${ok?"":`<span class="tag lkb c">&#128274; ${H2(tn)}</span>`}<div><b>${H2(ser||it.title)}</b><br><span class="mute">${ser?n+" episodes":H2(it.type)}${it.dur?" &middot; "+Math.round(it.dur/60)+" min":""}</span><br>${ser?"":`<button class="s" data-wl="${it.id}">${lst("wl").includes(it.id)?"&#10003; Watchlist":"+ Watchlist"}</button><button class="s" data-fv="${it.id}">${lst("fv").includes(it.id)?"&#9829;":"&#9825;"}</button>`}</div></div>`};
@@ -2975,7 +2979,7 @@ V.odwatch=(a,el)=>{const it=catalog().find(x=>x.id===a);if(!it){el.innerHTML='<p
  const L=it.series?catalog().filter(x=>x.series===it.series).sort(ord):[],i=L.findIndex(x=>x.id===it.id),pv=i>0?L.slice(0,i).reverse().find(can):null,nx=nextEp(it);
  const eps=L.length>1?`<h2 style="font-size:22px">Episodes</h2>${L.map(x=>`<div class="row" style="padding:4px 0">${x.id===it.id?"&#9654;":""}<a href="#odwatch/${x.id}">${can(x)?"":"&#128274; "}S${H2(x.season||1)} E${H2(x.ep||"")} ${H2(x.title)}</a></div>`).join("")}`:"";
  el.innerHTML=`<div class="od"><a href="#ondemand">&larr; On-Demand</a><div id="nspbox" style="margin-top:8px"></div><h2>${H2(it.title)}</h2><p>${H2(it.syn||"")}</p>${st?`<p class="mute">Resumed at ${tf(st)}. Use Restart to begin again.</p>`:""}${eps}<p class="mute">Video is delivered through YouTube, so YouTube's own ads and branding rules still apply.</p></div>`;
- window.NSPlay.mount(el.querySelector("#nspbox"),{mode:"vod",lt:it.type,id:it.yt,start:st,title:it.title,sub:it.series?it.series+" - S"+(it.season||1)+" E"+(it.ep||""):it.type,dur:(+it.dur||0)*60,prev:pv?()=>{location.hash="#odwatch/"+pv.id}:null,next:nx?()=>{location.hash="#odwatch/"+nx.id}:null,
+ window.NSPlay.mount(el.querySelector("#nspbox"),{mode:"vod",lt:it.type,id:it.yt||(it.ia&&it.ia.url)||"",src:(!it.yt&&window.NSX&&window.NSX.iaOk&&window.NSX.iaOk(it))?it.ia.url:"",start:st,title:it.title,sub:it.series?it.series+" - S"+(it.season||1)+" E"+(it.ep||""):it.type,dur:(+it.dur||0)*60,prev:pv?()=>{location.hash="#odwatch/"+pv.id}:null,next:nx?()=>{location.hash="#odwatch/"+nx.id}:null,
   onProgress:(t,d)=>{const P=DB.get("prog_"+UK(),{});P[it.id]={t,d,at:Date.now()};DB.set("prog_"+UK(),P)},
   onEnd:d=>{const P=DB.get("prog_"+UK(),{});P[it.id]={t:0,d,at:Date.now(),done:1};DB.set("prog_"+UK(),P);if(nx){say("Next up: "+nx.title);setTimeout(()=>{if(location.hash==="#odwatch/"+it.id)location.hash="#odwatch/"+nx.id},3000)}}})};
 V.odadmin=(a,el)=>{if(!isAd()){el.innerHTML='<p>Admins only.</p>';return}const M=DB.get("od_tier",{}),L=lib().filter(it=>it.yt),T=tiers();
@@ -3106,7 +3110,7 @@ window.NSImport={parse:parseMsg};window.NSSched=sched;
 </script>
 <style id="ns5css">
 .nsp{position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-height:220px;background:#05080a;color:#fff;font:600 13px 'Bricolage Grotesque',system-ui,sans-serif}
-.nsp .nsv{position:relative;flex:1;min-height:0;background:#000}.nsp .nsv iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.nsp .nsv{position:relative;flex:1;min-height:0;background:#000}.nsp .nsv iframe{position:absolute;inset:0;width:100%;height:100%;border:0}.nsv video{position:absolute;inset:0;width:100%;height:100%;background:#000;object-fit:contain}
 .nsp .nss{position:absolute;inset:0;z-index:2}.nsp.vod .nss{cursor:pointer}
 .nsp .nsl{position:absolute;inset:0;z-index:3;display:grid;place-items:center;text-align:center;padding:16px;background:radial-gradient(120% 140% at 50% 0%,#0f4652,#071d24 70%);color:#f0d68a}.nsp .nsl[hidden]{display:none}
 .nsp .nsc{flex:none;display:flex;flex-direction:column;gap:6px;padding:8px 12px 10px;background:linear-gradient(#0b2a33,#071d24);border-top:2px solid #d4af37}
@@ -3126,8 +3130,47 @@ const E=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt
 const tf=s=>{s=Math.max(0,Math.round(s||0));const h=Math.floor(s/3600),m=Math.floor(s%3600/60),r=s%60;return(h?h+":"+String(m).padStart(2,"0"):m)+":"+String(r).padStart(2,"0")};
 let GEST=false;["pointerdown","keydown"].forEach(t=>addEventListener(t,()=>{GEST=true},{capture:true,once:true}));
 const NSP={active:null,mount};window.NSPlay=NSP;
+/* Native player for approved Internet Archive files (plain video/audio file). Same controls, same inst API as the YouTube player. */
+function mountNative(box,o){
+ const vs=DB.get("ns_vol",{v:80,m:false});let muted=!GEST||vs.m,alive=true,ended=false,t0=Date.now(),lastP=0;
+ const dvr=o.dvr&&!o.nodvr&&o.startMs;
+ const ui=()=>`<div class="r"><b>${E(o.title)}</b><span class="mu">${E(o.sub||"")}</span>${dvr?'<span class="lb" data-badge>\u25CF LIVE</span><span class="mu" data-lag></span><button data-a="golive" hidden>Go Live</button>':""}</div><div class="r"><span data-e>0:00</span><div class="bar" data-bar role="slider" aria-label="Seek"><i data-p></i></div><span data-r>-0:00</span></div><div class="r"><button data-a="prev" ${o.prev?"":"disabled"}>&#9198; Prev</button><button data-a="b10">&minus;10s</button><button data-a="pp" style="min-width:76px">Play</button><button data-a="f10">+10s</button><button data-a="next" ${o.next?"":"disabled"}>Next &#9197;</button><button data-a="rs">Restart</button><button data-a="mute" aria-label="Mute"></button><input type="range" min="0" max="100" data-v aria-label="Volume"><button data-a="fs">Full screen</button></div>`;
+ box.innerHTML=`<div class="nsp vod${o.nodvr?" nodvr":""}"><div class="nsv"><video playsinline preload="auto" aria-label="${E(o.title)}"></video><div class="nss"></div><div class="nsl"><div><small>NORTHSTAR</small><br><b data-lt>Loading ${E(o.title)}&hellip;</b><br><button data-a="go" hidden style="margin-top:10px">Start playback</button></div></div></div><div class="nsc">${ui()}</div></div>`;
+ const R=box.querySelector(".nsp"),v=R.querySelector("video"),q=s=>R.querySelector(s),S={t:0,d:0,s:-1,got:0,mu:muted};
+ v.muted=muted;v.volume=Math.max(0,Math.min(1,vs.v/100));
+ const pos0=()=>o.startMs?(Date.now()-o.startMs)/1e3:(o.start||0);
+ const setMute=m=>{muted=m;v.muted=m;S.mu=m;DB.set("ns_vol",{v:vs.v,m});draw()},setVol=n=>{vs.v=n;v.volume=n/100;if(n>0&&muted){muted=false;v.muted=false;S.mu=false}DB.set("ns_vol",{v:n,m:muted});draw()};
+ const play=()=>{const p=v.play();if(p&&p.catch)p.catch(()=>{const g=q('[data-a="go"]');if(g)g.hidden=false})};
+ const inst={live:false,nodvr:!!o.nodvr,S,
+  destroy(){alive=false;clearInterval(iv);try{v.pause();v.removeAttribute("src");v.load()}catch(e){}if(NSP.active===inst)NSP.active=null;box._nsp=null},
+  toggle(){if(o.nodvr)return;v.paused?play():v.pause()},
+  seek(t){if(o.nodvr)return;t=Math.max(0,S.d?Math.min(t,S.d-0.5):t);S.t=t;try{v.currentTime=t}catch(e){}},
+  skip(d){inst.seek(S.t+d)},restart(){inst.seek(0);play()},goLive(){if(o.startMs){inst.seek((Date.now()-o.startMs)/1e3);play()}},
+  mute(){setMute(!muted)},vol(d){setVol(Math.max(0,Math.min(100,vs.v+d)))},cc(){},
+  fs(){document.fullscreenElement?document.exitFullscreen():R.requestFullscreen&&R.requestFullscreen()},
+  prev(){o.prev&&o.prev()},next(){o.next&&o.next()},
+  swap(n){if(!n||!n.src)return;if(n.src===o.src){o=n;return}o=n;S.t=0;S.d=0;S.s=-1;ended=false;t0=Date.now();q(".nsl").hidden=false;q("[data-lt]").textContent="Loading "+n.title+"...";v.src=n.src;play()}};
+ v.onloadedmetadata=()=>{S.d=v.duration||0;const p=pos0();if(S.d&&p>=S.d-1){S.s=0;if(!ended){ended=true;o.onEnd&&o.onEnd(S.d)}return}if(p>1){try{v.currentTime=p}catch(e){}}S.got=Date.now()};
+ v.ontimeupdate=()=>{S.t=v.currentTime;S.got=Date.now()};
+ v.onplaying=()=>{S.s=1;q(".nsl").hidden=true};v.onpause=()=>{if(!v.ended)S.s=2};v.onwaiting=()=>{S.s=3};
+ v.onended=()=>{S.s=0;if(!ended){ended=true;o.onEnd&&o.onEnd(S.d)}};
+ v.onvolumechange=()=>{S.mu=v.muted};
+ v.onerror=()=>{q("[data-lt]").textContent="This file can't be played right now. It may have been removed from Internet Archive.";q(".nsl").hidden=false;const g=q('[data-a="go"]');if(g)g.hidden=true;window.NSDIAGnote&&window.NSDIAGnote("archive media error: "+o.src)};
+ v.src=o.src;
+ const A={chup:()=>{},chdn:()=>{},mute:inst.mute,pp:inst.toggle,b10:()=>inst.skip(-10),f10:()=>inst.skip(10),rs:inst.restart,golive:inst.goLive,prev:inst.prev,next:inst.next,fs:inst.fs,go:()=>{play();if(!muted)v.muted=false}};
+ R.addEventListener("click",e=>{const b=e.target.closest("button[data-a]");if(b&&A[b.dataset.a])A[b.dataset.a]();if(e.target.closest(".nss"))inst.toggle()});
+ q("[data-v]").oninput=e=>setVol(+e.target.value);
+ const bar=q("[data-bar]");if(bar){const at=e=>{const r=bar.getBoundingClientRect();inst.seek(Math.max(0,Math.min(1,(e.clientX-r.left)/r.width))*(S.d||o.dur||0))};let dn=false;bar.onpointerdown=e=>{dn=true;bar.setPointerCapture(e.pointerId);at(e)};bar.onpointermove=e=>{if(dn)at(e)};bar.onpointerup=()=>{dn=false}}
+ function draw(){const m=q('[data-a="mute"]'),vv=q("[data-v]"),mh=muted?"&#128263; Muted":"&#128266; Sound";if(m&&m.__h!==mh){m.__h=mh;m.innerHTML=mh}const val=String(muted?0:vs.v);if(vv&&vv.value!==val&&document.activeElement!==vv)vv.value=val;const pp=q('[data-a="pp"]'),pt=S.s===1?"Pause":"Play";if(pp&&pp.textContent!==pt)pp.textContent=pt;
+  if(dvr){const lag=S.got?Math.max(0,(Date.now()-o.startMs)/1e3-S.t):0,beh=lag>8,lg=q("[data-lag]"),gl=q('[data-a="golive"]'),lb=q("[data-badge]");if(lg){const t=beh?"Behind live by "+tf(lag):"";if(lg.textContent!==t)lg.textContent=t}if(gl&&gl.hidden===beh)gl.hidden=!beh;if(lb){const t=beh?"\u25F7 DELAYED":"\u25CF LIVE";if(lb.textContent!==t)lb.textContent=t}}}
+ const iv=setInterval(()=>{if(!alive)return;if(!box.isConnected||box._nsp!==inst){inst.destroy();return}
+  const playing=S.s===1||S.t>0.5;if(playing&&!q(".nsl").hidden)q(".nsl").hidden=true;
+  if(!playing&&Date.now()-t0>20000&&!S.got)q("[data-lt]").textContent="The file did not respond. It may have been removed, or this device is offline.";
+  draw();const d=S.d||o.dur||0;q("[data-p]").style.width=d?Math.min(100,S.t/d*100)+"%":"0";q("[data-e]").textContent=tf(S.t);q("[data-r]").textContent="-"+tf(d-S.t);
+  if(S.got&&Date.now()-lastP>5000&&S.t>0){lastP=Date.now();o.onProgress&&o.onProgress(S.t,S.d)}},250);
+ box._nsp=inst;NSP.active=inst;draw();play();return inst}
 function mount(box,o){
- try{window.NSTRACK&&window.NSTRACK(o)}catch(e){}if(box._nsp)box._nsp.destroy();const live=o.mode==="live",vs=DB.get("ns_vol",{v:80,m:false});let cc=0,muted=!GEST||vs.m;
+ try{window.NSTRACK&&window.NSTRACK(o)}catch(e){}if(box._nsp)box._nsp.destroy();if(o.src)return mountNative(box,o);const live=o.mode==="live",vs=DB.get("ns_vol",{v:80,m:false});let cc=0,muted=!GEST||vs.m;
  const url=st=>`https://www.youtube-nocookie.com/embed/${encodeURIComponent(o.id)}?autoplay=1&controls=0&disablekb=1&fs=0&modestbranding=1&rel=0&iv_load_policy=3&playsinline=1&enablejsapi=1&mute=${muted?1:0}&cc_load_policy=${cc}&start=${Math.max(0,Math.floor(st))}`;
  const pos0=()=>live&&o.startMs&&!o.ytlive?(Date.now()-o.startMs)/1e3:(o.start||0);
  const uiF=()=>live?`<div class="r"><span class="lb">&#9679; LIVE</span><b>${E(o.ch.n+" "+o.ch.name)}</b><span>${E(o.title)}</span>${o.endMs?`<span class="mu">${X.fmt(o.startMs)} &ndash; ${X.fmt(o.endMs)}</span>`:""}</div>
@@ -3189,12 +3232,12 @@ const dvrOK=()=>{try{const m=window.NSS?window.NSS.dvrMode():"all";if(m!=="subs"
 X.setPlayer(function(box,ch,o,unmute){
  const kill=()=>{if(box._nsp){box._nsp.destroy();box._nsp=null}};
  if(!X.canWatch(ch).ok){kill();const k="ns-lock:"+ch.n;if(box.dataset.k!==k){box.dataset.k=k;box.style.aspectRatio="16/9";box.replaceChildren();const d=document.createElement("div");d.className="tvslate";d.style.setProperty("--h",ch.hue||180);const w=document.createElement("div"),sm=document.createElement("small"),b=document.createElement("b"),p=document.createElement("p");sm.textContent=ch.name;b.textContent="Members channel";p.textContent="Sign in with an eligible NorthStar package to watch this channel.";w.append(sm,document.createElement("br"),b,p);d.append(w);box.append(d)}return}
- let id="",ytlive=false;if(o.lv){id=o.lv.id;ytlive=true}else if(o.cur){id=yid(o.cur.it&&o.cur.it.yt);ytlive=!!(o.cur.it&&o.cur.it.live)}
+ let id="",ytlive=false,src="";if(o.lv){id=o.lv.id;ytlive=true}else if(o.cur){id=yid(o.cur.it&&o.cur.it.yt);ytlive=!!(o.cur.it&&o.cur.it.live);if(!id&&o.cur.it&&X.iaOk&&X.iaOk(o.cur.it)){src=o.cur.it.ia.url;id=src}}
  if(!id){kill();const k="ns-standby:"+ch.n+":"+(o.cur?o.cur.slot+":"+o.cur.start:"none")+":"+(o.next?o.next.start:0);if(box.dataset.k!==k){box.dataset.k=k;box.style.aspectRatio="16/9";box.replaceChildren();const d=document.createElement("div");d.className="tvslate";d.style.setProperty("--h",ch.hue||180);const w=document.createElement("div"),sm=document.createElement("small"),b=document.createElement("b"),p=document.createElement("p");sm.textContent=ch.name;b.textContent=o.cur?o.cur.title:"Standby";p.textContent=o.cur?"This program is listed, but its video link is not attached yet.":(o.next?"Next: "+o.next.title:"No program is scheduled yet.");w.append(sm,document.createElement("br"),b,p);d.append(w);box.append(d)}return}
  const c=o.cur,key="ns-single:"+(dvrOK()?"d":"n")+ch.n+":"+(o.lv?"live:"+id:(o.cur.slot+":"+o.cur.start+":"+id));
  if(box.dataset.k===key&&box._nsp)return;
  box.dataset.k=key;
- const sm=c?c.start:(o.lv&&o.lv.t)||Date.now(),n={mode:"vod",lt:c&&c.it&&c.it.type,id,ytlive,ch,title:c?c.title:(o.lv&&o.lv.title)||ch.name,sub:ch.n+" "+ch.name+(c?" \u00b7 "+X.fmt(c.start)+" \u2013 "+X.fmt(c.end):" \u00b7 LIVE"),start:ytlive?0:Math.max(0,Math.floor((Date.now()-sm)/1e3)),dur:c&&!ytlive?Math.round((c.end-c.start)/1e3):0,startMs:sm,dvr:true,nodvr:!dvrOK(),prev:null,next:null,lib:c&&c.it&&c.it.id,onEnd:o.lv?()=>{try{const lv=o.lv,L=DB.get("bc_live",{on:false});if(L&&L.on&&L.id===lv.id){DB.set("ns_live_ended",{id:lv.id,t:lv.t||0});DB.set("bc_live",{on:false});DB.set("live",(DB.get("live",[])||[]).map(e=>Object.assign({},e,{onair:false})));if(window.__nsPushLive&&window.NSSB&&NSSB.jwt())window.__nsPushLive();setTimeout(()=>{try{window.__tvTune&&window.__tvTune(ch.n)}catch(e){}},400)}}catch(e){}}:null};
+ const sm=c?c.start:(o.lv&&o.lv.t)||Date.now(),n={mode:"vod",lt:c&&c.it&&c.it.type,id,src,ytlive,ch,title:c?c.title:(o.lv&&o.lv.title)||ch.name,sub:ch.n+" "+ch.name+(c?" \u00b7 "+X.fmt(c.start)+" \u2013 "+X.fmt(c.end):" \u00b7 LIVE"),start:ytlive?0:Math.max(0,Math.floor((Date.now()-sm)/1e3)),dur:c&&!ytlive?Math.round((c.end-c.start)/1e3):0,startMs:sm,dvr:true,nodvr:!dvrOK(),prev:null,next:null,lib:c&&c.it&&c.it.id,onEnd:o.lv?()=>{try{const lv=o.lv,L=DB.get("bc_live",{on:false});if(L&&L.on&&L.id===lv.id){DB.set("ns_live_ended",{id:lv.id,t:lv.t||0});DB.set("bc_live",{on:false});DB.set("live",(DB.get("live",[])||[]).map(e=>Object.assign({},e,{onair:false})));if(window.__nsPushLive&&window.NSSB&&NSSB.jwt())window.__nsPushLive();setTimeout(()=>{try{window.__tvTune&&window.__tvTune(ch.n)}catch(e){}},400)}}catch(e){}}:null};
  kill();box.style.aspectRatio="";mount(box,n);
 });
 /* NS LIVE PLAYER REBUILD v2: one player owner; guide refreshes never fall back to the legacy iframe. */
@@ -3581,7 +3624,7 @@ window.NSNET={mount(el){if(!admin()||el.querySelector("#nsnet"))return;el.insert
 
 /* ================= ON-DEMAND: Movies | TV Shows, artwork, categories, search, seasons ================= */
 const lstK=k=>k+"_u_"+((U()||{}).id||"guest"),lst=k=>DB.get(lstK(k),[]);
-const catalog=()=>{const X=NSXr();return(X.lib?X.lib():[]).filter(it=>it.yt&&it.rights&&it.rights!=="pending")};
+const catalog=()=>{const X=NSXr();return(X.lib?X.lib():[]).filter(it=>(it.yt||(X.iaOk&&X.iaOk(it)))&&it.rights&&it.rights!=="pending")};
 const can=it=>window.NS&&window.NS.entitled?window.NS.entitled(it):false;
 const thumb=it=>it.art||it.poster||("https://i.ytimg.com/vi/"+encodeURIComponent(it.yt)+"/hqdefault.jpg");
 const isMovie=it=>it.type==="movie"||(!it.series&&it.type!=="episode"&&it.type!=="show");
@@ -4408,7 +4451,16 @@ function validate(file,kind,item){const r=[];
  if(!item.available)r.push("item unavailable");
  if(item.rights.status!=="review-eligible")r.push("rights not cleared: "+item.rights.why);
  return{ok:!r.length,autoSchedule:!r.length,reasons:r}}
-window.NSIA={search,inspect,validate,rights,minTvSeconds:MIN_TV_SEC};
+const DL=/^https:\/\/archive\.org\/download\/[A-Za-z0-9._-]+\/[^\s"'<>]+$/;
+const playable=u=>DL.test(String(u||""));
+/* Real playback check: load only the file's metadata in a hidden media element. Gives the true runtime or the real failure. */
+function probe(url,ms){return new Promise(res=>{if(!playable(url))return res({ok:false,seconds:0,err:"Not an Internet Archive download link"});
+ const v=document.createElement("video");v.preload="metadata";v.muted=true;let done=false,t;
+ const end=r=>{if(done)return;done=true;clearTimeout(t);try{v.removeAttribute("src");v.load()}catch(e){}res(r)};
+ t=setTimeout(()=>end({ok:false,seconds:0,err:"Timed out loading the file"}),ms||25000);
+ v.onloadedmetadata=()=>{const d=isFinite(v.duration)?v.duration:0;end({ok:d>0,seconds:d,err:d>0?"":"File reports no length"})};
+ v.onerror=()=>end({ok:false,seconds:0,err:"Browser could not load this file (code "+(v.error?v.error.code:"?")+")"});v.src=url})}
+window.NSIA={search,inspect,validate,rights,playable,probe,minTvSeconds:MIN_TV_SEC};
 })();
 </script>
 <script id="ns-ia-research">
@@ -4421,6 +4473,23 @@ const KEY="ia_queue",Q=()=>{const q=X.D.get(KEY,[]);return Array.isArray(q)?q:[]
 const S={kind:"tv",q:"",busy:"",msg:"",err:"",results:null,item:null,runs:{}};
 const COLL=["classic_tv","prelinger","ephemera","classic_cartoons","television"];
 const mins=s=>s>0?Math.round(s/60)+" min":"unknown";
+/* Approved files become Content Library items that carry their own rights record (ia.*). Rejecting, reopening or removing the record takes them back out. */
+const libId=(qid,f)=>("ia-"+qid.slice(3)+"-"+f).replace(/[^A-Za-z0-9._-]+/g,"_").slice(0,160);
+const unpub=x=>{const L=X.lib(),k=L.filter(i=>!(i.ia&&i.ia.queueId===x.id));if(k.length!==L.length)X.saveLib(k);return L.length-k.length};
+function pub(x,files){const L=X.lib().slice(),have=new Set(L.map(i=>i.id)),epi=x.kind!=="music"&&files.some(f=>f.season!=null),pd=/publicdomain/i.test(x.licenseurl||"");let n=0;
+ files.forEach(f=>{const id=libId(x.id,f.file);if(have.has(id))return;const base=f.file.replace(/\.[^.]+$/,"");
+  L.push({id,type:x.kind==="music"?"music":(f.season!=null?"episode":"movie"),title:(f.season!=null?x.title+" S"+f.season+"E"+f.episode:(files.length>1?x.title+" - "+base:x.title)).slice(0,140),
+   series:epi?x.title:"",season:f.season!=null?f.season:undefined,ep:f.episode!=null?f.episode:undefined,dur:Math.ceil((f.seconds||0)/60),
+   rights:pd?"public":"licensed",rnote:x.rightsNote||"",src:"import-ia",okreal:1,tags:"",syn:"",chs:[],imp:1,
+   ia:{approved:true,queueId:x.id,itemId:x.id.slice(3),file:f.file,url:f.url,sourceUrl:x.sourceUrl,license:x.licenseurl||"",rightsNote:x.rightsNote||"",rightsWhy:x.rightsWhy||"",seconds:f.seconds||0,artwork:x.artwork||"",approvedAt:Date.now()}});n++});
+ if(n)X.saveLib(L);return n}
+async function approve(x){const q=Q();S.err="";S.busy="Testing playback of "+x.files.length+" file(s)...";paint();const good=[],bad=[];
+ for(const f of x.files){const r=await A.probe(f.url);if(!r.ok){bad.push(f.file+": "+r.err);continue}
+  const secs=r.seconds||f.seconds;if(x.kind!=="music"&&secs<A.minTvSeconds){bad.push(f.file+": real length "+Math.round(secs/60)+" min is under the 22 min minimum");continue}
+  f.seconds=secs;good.push(f)}
+ S.busy="";if(!good.length){S.err="Not approved: no file passed the playback test. "+bad.join(" | ");note(x,"approval blocked",bad.join(" | "));saveQ(q);return paint()}
+ x.files=good;x.status="approved";note(x,"approved",(x.rightsNote||"")+(bad.length?" | skipped: "+bad.join(" | "):""));const n=pub(x,good);saveQ(q);
+ S.msg="Approved. "+n+" file(s) passed a real playback test and were added to the Content Library with their rights record."+(bad.length?" Skipped: "+bad.join("; "):"")+" Nothing is scheduled yet. Schedule them like any other library item.";paint()}
 const safeUrl=u=>/^https:\/\/archive\.org\//.test(u)?u:"#";
 const tag=(t,c)=>`<span class="tag ${c||"n"}">${E(t)}</span>`;
 function paint(){const r=S.root;if(!r||!r.isConnected)return;const h=S.host;h.innerHTML=html();bind(h)}
@@ -4479,10 +4548,10 @@ function bind(h){h.onclick=e=>{const b=e.target.closest("[data-ia]");if(!b)retur
   saveQ(q);S.item=null;S.msg=okf.length+" file(s) sent to the review queue. Nothing is scheduled.";paint()}
  else if(x){
   if(a==="approve"){if(x.rightsStatus!=="review-eligible")return say("Restricted items cannot be approved.");if(!x.files.length)return say("No eligible files on this item.");
-   if(!confirm("You are confirming this item's license permits NorthStar to broadcast it. Approve?"))return;x.status="approved";note(x,"approved",x.rightsNote||"");saveQ(q);S.msg="Approved. The decision, source URL and history are saved. It is not scheduled and has no player link yet.";paint()}
-  else if(a==="reject"){const r=prompt("Reason for rejecting (optional):","")||"";x.status="rejected";note(x,"rejected",r);saveQ(q);paint()}
-  else if(a==="reopen"){x.status="pending";note(x,"moved back to review","");saveQ(q);paint()}
-  else if(a==="drop"){if(confirm("Remove this record and its history?")){saveQ(q.filter(y=>y!==x));paint()}}}};
+   if(!confirm("You are confirming this item's license permits NorthStar to broadcast it. Approve? Each file is test-loaded first and added to the Content Library."))return;approve(x)}
+  else if(a==="reject"){const r=prompt("Reason for rejecting (optional):","")||"";const n=unpub(x);x.status="rejected";note(x,"rejected",r+(n?" | removed "+n+" library item(s)":""));saveQ(q);paint()}
+  else if(a==="reopen"){const n=unpub(x);x.status="pending";note(x,"moved back to review",n?"removed "+n+" library item(s)":"");saveQ(q);paint()}
+  else if(a==="drop"){if(confirm("Remove this record and its history? Its library items are removed too.")){unpub(x);saveQ(q.filter(y=>y!==x));paint()}}}};
  const k=h.querySelector("#iaq");if(k)k.onkeydown=e=>{if(e.key==="Enter")h.querySelector('[data-ia="search"]').click()}}
 window.NSIAResearch={queue:Q,state:S};
 try{const old=X.ccDraw();X.setDraw(function(sec){old(sec);if(X.tab()!=="research")return;const body=sec.querySelector("#rjroot");if(!body)return;let h=body.querySelector("#iaroot");if(!h){h=document.createElement("div");h.id="iaroot";body.appendChild(h)}S.root=body;S.host=h;paint()});if(/^#(admin|tvadmin)/.test(location.hash)&&typeof route==="function")route()}catch(e){console.warn("IA research panel",e)}
