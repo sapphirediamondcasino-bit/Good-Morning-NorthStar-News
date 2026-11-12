@@ -4469,7 +4469,36 @@ window.NSIA={search,inspect,validate,rights,playable,probe,minTvSeconds:MIN_TV_S
    Library items still need a playable video link (yt) to be schedulable, so IA items cannot auto-schedule from this panel. */
 (function(){"use strict";const X=window.NSX,A=window.NSIA;if(!X||!A)return;
 const E=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const KEY="ia_queue",Q=()=>{const q=X.D.get(KEY,[]);return Array.isArray(q)?q:[]},saveQ=q=>X.D.set(KEY,q);
+const KEY="ia_queue",SKEY="ia_queue_sync",Q=()=>{const q=X.D.get(KEY,[]);return Array.isArray(q)?q:[]};
+/* Shared queue: the browser copy is the working copy (fast, works offline); Supabase table ns_ia_queue is the shared truth between administrators.
+   Newest record wins (record.updatedAt). A record that was synced before and is now gone from the server was deleted by another administrator. */
+const SBQ={state:"idle",msg:"",at:0,busy:false,sig:(()=>{try{const s=X.D.get(SKEY,{});return s&&typeof s==="object"?s:{}}catch(e){return{}}})()};
+const sigOf=r=>JSON.stringify(Object.assign({},r,{updatedAt:0})),saveSig=()=>{try{X.D.set(SKEY,SBQ.sig)}catch(e){}};
+const sb=()=>window.NSSB,canSync=()=>{const s=sb();return !!(s&&s.cfg().ok&&s.jwt())};
+const rowOf=r=>({id:r.id,status:r.status,data:r,updated_at:new Date(r.updatedAt||Date.now()).toISOString()});
+async function upsert(recs){if(!recs.length)return;await sb().req("/rest/v1/ns_ia_queue?on_conflict=id",{method:"POST",auth:1,headers:{Prefer:"resolution=merge-duplicates,return=minimal"},body:recs.map(rowOf),timeout:30000});recs.forEach(r=>{SBQ.sig[r.id]=sigOf(r)});saveSig()}
+async function remove(ids){for(const id of ids){await sb().req("/rest/v1/ns_ia_queue?id=eq."+encodeURIComponent(id),{method:"DELETE",auth:1,headers:{Prefer:"return=minimal"}});delete SBQ.sig[id]}saveSig()}
+function saveQ(q){const gone=Object.keys(SBQ.sig).filter(id=>!q.some(r=>r.id===id)),chg=[];
+ q.forEach(r=>{if(SBQ.sig[r.id]!==sigOf(r)){r.updatedAt=Date.now();chg.push(r)}});
+ X.D.set(KEY,q);
+ if(!canSync()){SBQ.state=sb()&&sb().cfg().ok?"signin":"nosb";return}
+ (async()=>{try{await upsert(chg);await remove(gone);SBQ.state="ok";SBQ.msg="";SBQ.at=Date.now()}catch(e){SBQ.state="err";SBQ.msg=e.message}paintSoft()})()}
+async function pullQ(){if(SBQ.busy)return false;if(!canSync()){SBQ.state=sb()&&sb().cfg().ok?"signin":"nosb";return false}
+ SBQ.busy=true;const before=JSON.stringify(Q());
+ try{const rows=await sb().req("/rest/v1/ns_ia_queue?select=id,data&order=updated_at.desc&limit=1000",{auth:1});
+  const srv=new Map((rows||[]).map(r=>[r.id,r.data])),local=Q().slice(),out=[],push=[],seen=new Set();
+  local.forEach(l=>{const s=srv.get(l.id);seen.add(l.id);
+   if(!s){if(SBQ.sig[l.id]!==undefined){unpub(l);delete SBQ.sig[l.id];return}push.push(l);out.push(l);return}
+   const su=s.updatedAt||0,lu=l.updatedAt||0;
+   if(su>lu){if(l.status==="approved"&&s.status!=="approved")unpub(s);out.push(s);SBQ.sig[s.id]=sigOf(s)}
+   else{out.push(l);if(lu>su)push.push(l);else SBQ.sig[l.id]=sigOf(l)}});
+  srv.forEach((s,id)=>{if(!seen.has(id)){out.push(s);SBQ.sig[id]=sigOf(s)}});
+  out.sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
+  X.D.set(KEY,out);saveSig();await upsert(push);SBQ.state="ok";SBQ.msg="";SBQ.at=Date.now()}
+ catch(e){SBQ.state="err";SBQ.msg=/relation .*ns_ia_queue|404/.test(e.message||"")||e.status===404?"The table ns_ia_queue does not exist yet. Run 07_ia_review_queue.sql in the Supabase SQL editor.":e.message}
+ finally{SBQ.busy=false}
+ return JSON.stringify(Q())!==before}
+const syncTxt=()=>({ok:"Shared with all administrators"+(SBQ.at?" (synced "+new Date(SBQ.at).toLocaleTimeString()+")":""),signin:"Local only: sign in as the Supabase admin (Admin > Network settings) to share this queue",nosb:"Local only: Supabase is not set up",err:"Not synced: "+SBQ.msg,idle:"Checking shared queue..."})[SBQ.state]||"";
 const S={kind:"tv",q:"",busy:"",msg:"",err:"",results:null,item:null,runs:{}};
 const COLL=["classic_tv","prelinger","ephemera","classic_cartoons","television"];
 const mins=s=>s>0?Math.round(s/60)+" min":"unknown";
@@ -4480,12 +4509,12 @@ function pub(x,files){const L=X.lib().slice(),have=new Set(L.map(i=>i.id)),epi=x
  files.forEach(f=>{const id=libId(x.id,f.file);if(have.has(id))return;const base=f.file.replace(/\.[^.]+$/,"");
   L.push({id,type:x.kind==="music"?"music":(f.season!=null?"episode":"movie"),title:(f.season!=null?x.title+" S"+f.season+"E"+f.episode:(files.length>1?x.title+" - "+base:x.title)).slice(0,140),
    series:epi?x.title:"",season:f.season!=null?f.season:undefined,ep:f.episode!=null?f.episode:undefined,dur:Math.ceil((f.seconds||0)/60),
-   rights:pd?"public":"licensed",rnote:x.rightsNote||"",src:"import-ia",okreal:1,tags:"",syn:"",chs:[],imp:1,
-   ia:{approved:true,queueId:x.id,itemId:x.id.slice(3),file:f.file,url:f.url,sourceUrl:x.sourceUrl,license:x.licenseurl||"",rightsNote:x.rightsNote||"",rightsWhy:x.rightsWhy||"",seconds:f.seconds||0,artwork:x.artwork||"",approvedAt:Date.now()}});n++});
+   rights:pd?"public":"licensed",rnote:(x.override&&x.override.on?"ADMIN OVERRIDE ("+x.override.reason+"). ":"")+(x.rightsNote||""),src:"import-ia",okreal:1,runOk:(x.override&&x.override.on)?1:undefined,tags:"",syn:"",chs:[],imp:1,
+   ia:{approved:true,queueId:x.id,itemId:x.id.slice(3),file:f.file,url:f.url,sourceUrl:x.sourceUrl,license:x.licenseurl||"",rightsNote:x.rightsNote||"",rightsWhy:x.rightsWhy||"",seconds:f.seconds||0,artwork:x.artwork||"",approvedAt:Date.now(),override:!!(x.override&&x.override.on)}});n++});
  if(n)X.saveLib(L);return n}
-async function approve(x){const q=Q();S.err="";S.busy="Testing playback of "+x.files.length+" file(s)...";paint();const good=[],bad=[];
+async function approve(x,q){q=q||Q();S.err="";S.busy="Testing playback of "+x.files.length+" file(s)...";paint();const good=[],bad=[];
  for(const f of x.files){const r=await A.probe(f.url);if(!r.ok){bad.push(f.file+": "+r.err);continue}
-  const secs=r.seconds||f.seconds;if(x.kind!=="music"&&secs<A.minTvSeconds){bad.push(f.file+": real length "+Math.round(secs/60)+" min is under the 22 min minimum");continue}
+  const secs=r.seconds||f.seconds;if(x.kind!=="music"&&secs<A.minTvSeconds&&!(x.override&&x.override.on)){bad.push(f.file+": real length "+Math.round(secs/60)+" min is under the 22 min minimum");continue}
   f.seconds=secs;good.push(f)}
  S.busy="";if(!good.length){S.err="Not approved: no file passed the playback test. "+bad.join(" | ");note(x,"approval blocked",bad.join(" | "));saveQ(q);return paint()}
  x.files=good;x.status="approved";note(x,"approved",(x.rightsNote||"")+(bad.length?" | skipped: "+bad.join(" | "):""));const n=pub(x,good);saveQ(q);
@@ -4502,11 +4531,13 @@ function html(){const q=Q(),pend=q.filter(x=>x.status==="pending"),done=q.filter
  <span class="mute">${E(S.busy)}</span></div>
  ${S.err?`<div class="warn">${E(S.err)}</div>`:""}${S.msg?`<div class="note">${E(S.msg)}</div>`:""}
  ${S.results?resultsHTML():""}${S.item?itemHTML(S.item):""}
- <h3>Rights-review queue (${pend.length} waiting)</h3>${queueHTML(pend)}
+ <div class="row"><span class="tag ${SBQ.state==='ok'?'n':'f'}">${E(syncTxt())}</span><button class="btn alt" data-ia="sync" ${SBQ.busy?"disabled":""}>Sync now</button></div><h3>Rights-review queue (${pend.length} waiting)</h3>${queueHTML(pend)}
  ${done.length?`<h3>Decisions (${done.length})</h3>${queueHTML(done)}`:""}`}
 function resultsHTML(){const r=S.results;if(!r.length)return'<p class="mute">No results.</p>';
  return `<table><tr><th>Title</th><th>Collections</th><th>License field</th><th></th></tr>${r.map(x=>`<tr><td>${E(x.title||x.id)}<br><small class="mute">${E(x.creator)} ${E(x.date)} &middot; ${E(x.id)}</small></td><td><small>${E(x.collections.slice(0,4).join(", "))}</small></td><td>${x.licenseurl?`<small>${E(x.licenseurl)}</small>`:'<small class="mute">none</small>'}</td><td><button class="btn alt" data-ia="inspect" data-v="${E(x.id)}">Inspect</button></td></tr>`).join("")}</table>`}
-function itemHTML(it){const rs=it.rights,ok=rs.status==="review-eligible",kind=S.itemKind||S.kind,inq=Q().find(x=>x.id==="ia:"+it.id);
+function itemHTML(it){const rs=it.rights,ok=rs.status==="review-eligible",kind=S.itemKind||S.kind,inq=Q().find(x=>x.id==="ia:"+it.id),ov=!!S.ov,JK=/\b(trailer|teaser|promo|clip|highlight|reaction|review|recap|sample|preview|behind the scenes)\b/i;
+ const rows=it.files.map((f,i)=>{const v=A.validate(f,kind,it),pass=it.available&&(kind==="music"||(f.runtimeKnown&&f.seconds>=A.minTvSeconds&&!JK.test(f.file))),canAdd=it.available&&!!f.url&&((ok&&pass)||ov),on=canAdd&&(S.runs.sel&&S.runs.sel[i]!==undefined?S.runs.sel[i]:true);
+  return `<tr><td><input type="checkbox" data-ia-f="${i}" ${on?"checked":""} ${canAdd?"":"disabled"} style="width:auto;margin:0"></td><td><small>${E(f.file)}</small><br><small class="mute">${E(f.format)}</small></td><td>${f.season!=null?"S"+f.season+"E"+f.episode:""}</td><td>${f.runtimeKnown?mins(f.seconds):tag("unknown","f")}</td><td>${v.ok?tag("passes checks"):`<small>${E(v.reasons.join("; "))}</small>${ov&&canAdd?" "+tag("override","f"):""}`}</td></tr>`}).join("")||'<tr><td colspan="5" class="mute">No playable files found.</td></tr>';
  return `<div class="card" style="margin:12px 0"><div class="row" style="align-items:flex-start"><img src="${E(it.artwork)}" alt="" width="120" style="border-radius:6px;max-height:90px;object-fit:cover" onerror="this.style.display='none'">
  <div><b style="font-size:18px">${E(it.title)}</b> ${tag(ok?"Eligible for review":"Restricted: not cleared",ok?"n":"f")} ${it.available?"":tag("Unavailable","f")}<br>
  <small class="mute">${E(it.creator)} ${E(it.date)} &middot; collections: ${E(it.collections.join(", "))}</small><br>
@@ -4514,47 +4545,59 @@ function itemHTML(it){const rs=it.rights,ok=rs.status==="review-eligible",kind=S
  <p><b>Rights:</b> ${E(rs.why)}</p>${it.licenseurl?`<p><b>License URL:</b> ${E(it.licenseurl)}</p>`:"<p><b>License URL:</b> none on the item</p>"}
  ${it.description?`<p class="mute">${E(it.description)}</p>`:""}
  ${inq?`<p>${tag("Already in queue: "+inq.status)}</p>`:""}
- <table><tr><th>Add</th><th>File</th><th>S/E</th><th>Verified runtime</th><th>Check</th></tr>${it.files.map((f,i)=>{const v=A.validate(f,kind,it),canAdd=ok&&it.available&&(kind==="music"||(f.runtimeKnown&&f.seconds>=A.minTvSeconds&&!/\b(trailer|teaser|promo|clip|highlight|reaction|review|recap|sample|preview|behind the scenes)\b/i.test(f.file)));
- return `<tr><td><input type="checkbox" data-ia-f="${i}" ${canAdd&&!(S.runs.sel&&S.runs.sel[i]===false)?"checked":""} ${canAdd?"":"disabled"} style="width:auto;margin:0"></td><td><small>${E(f.file)}</small><br><small class="mute">${E(f.format)}</small></td><td>${f.season!=null?"S"+f.season+"E"+f.episode:""}</td><td>${f.runtimeKnown?mins(f.seconds):tag("unknown","f")}</td><td>${v.ok?tag("passes checks"):`<small>${E(v.reasons.join("; "))}</small>`}</td></tr>`}).join("")||'<tr><td colspan="5" class="mute">No playable files found.</td></tr>'}</table>
- ${ok?`<div class="row"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="iaconf" style="width:auto;margin:0"> I confirmed this item's license permits broadcast use.</label><input id="iano" placeholder="Rights note (required: what you checked)" style="max-width:340px;margin:0"><button class="btn" data-ia="queue">Send checked files to review queue</button></div>`:`<p class="mute">This item cannot be queued for approval. Keep it restricted, or reject it below so it is not offered again.</p><button class="btn alt" data-ia="rejectitem">Record as rejected</button>`}
+ <div class="row"><button class="btn alt" data-ia="selall" data-v="1">Select all</button><button class="btn alt" data-ia="selall" data-v="0">Clear all</button><label style="display:flex;gap:8px;align-items:center;margin-left:auto"><input type="checkbox" data-ia="ovtoggle" ${ov?"checked":""} style="width:auto;margin:0"> <b>Administrator override</b></label></div>
+ ${ov?'<div class="warn">Override is ON. Every file with a playable link can be checked, including restricted items, unknown runtimes, short files and clips. You must give a reason below. It is saved on the record, shown as OVERRIDE, and kept in the history. Items Internet Archive reports as unavailable still cannot be added.</div>':""}
+ <table><tr><th><input type="checkbox" data-ia="selall" title="Select or clear all" style="width:auto;margin:0"></th><th>File</th><th>S/E</th><th>Verified runtime</th><th>Check</th></tr>${rows}</table>
+ ${(ok||ov)?`<div class="row"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="iaconf" ${S.confVal?"checked":""} style="width:auto;margin:0"> ${ov?"I have the right to broadcast this and take responsibility for it.":"I confirmed this item's license permits broadcast use."}</label><input id="iano" value="${E(S.rnVal||"")}" placeholder="Rights note (required: what you checked)" style="max-width:340px;margin:0">${ov?`<input id="iaov" value="${E(S.ovVal||"")}" placeholder="Why you are overriding (required)" style="max-width:340px;margin:0">`:""}<button class="btn" data-ia="queue">Send checked files to review queue</button></div>`:`<p class="mute">This item cannot be queued for approval. Keep it restricted, turn on Administrator override above, or reject it so it is not offered again.</p><button class="btn alt" data-ia="rejectitem">Record as rejected</button>`}
  <button class="btn alt" data-ia="closeitem">Close</button></div>`}
 function queueHTML(l){if(!l.length)return'<p class="mute">Nothing here.</p>';
- return l.map(x=>`<div class="card" style="margin:8px 0"><div class="row"><b>${E(x.title)}</b>${tag(x.status,x.status==="rejected"?"f":"n")}${tag(x.rightsStatus,x.rightsStatus==="review-eligible"?"n":"f")}<span class="mute">${x.files.length} file(s)</span></div>
+ return l.map(x=>`<div class="card" style="margin:8px 0"><div class="row"><b>${E(x.title)}</b>${tag(x.status,x.status==="rejected"?"f":"n")}${tag(x.rightsStatus,x.rightsStatus==="review-eligible"?"n":"f")}${x.override&&x.override.on?tag("OVERRIDE","f"):""}<span class="mute">${x.files.length} file(s)</span></div>
  <small><a href="${E(safeUrl(x.sourceUrl))}" target="_blank" rel="noopener noreferrer">${E(x.sourceUrl)}</a>${x.licenseurl?" &middot; "+E(x.licenseurl):""}</small>
- <div class="mute"><small>${E(x.rightsWhy)}</small></div>
+ <div class="mute"><small>${E(x.rightsWhy)}</small></div>${x.override&&x.override.on?`<div class="warn"><small>Override by ${E(x.override.by)} on ${new Date(x.override.at).toLocaleString()}: ${E(x.override.reason)}${x.override.bypassed&&x.override.bypassed.length?" (bypassed: "+E(x.override.bypassed.join("; "))+")":""}</small></div>`:""}
  ${x.files.map(f=>`<div><small>${E(f.file)} &middot; ${mins(f.seconds)}${f.season!=null?" &middot; S"+f.season+"E"+f.episode:""}</small></div>`).join("")}
  <details><summary class="mute">History (${x.history.length})</summary>${x.history.map(h=>`<div><small>${new Date(h.at).toLocaleString()} &middot; ${E(h.action)}${h.note?": "+E(h.note):""}</small></div>`).join("")}</details>
  <div class="row">${x.status==="pending"?`<button class="btn" data-ia="approve" data-v="${E(x.id)}">Approve</button><button class="btn alt" data-ia="reject" data-v="${E(x.id)}">Reject</button>`:`<button class="btn alt" data-ia="reopen" data-v="${E(x.id)}">Move back to review</button>`}<button class="btn alt" data-ia="drop" data-v="${E(x.id)}">Remove</button></div></div>`).join("")}
 async function doSearch(q){S.q=q;S.err="";S.msg="";if(!q.trim()){S.err="Type a search or paste a link first.";return paint()}
  const lk=/^https?:\/\/(?:www\.)?archive\.org\/(?:details|embed|download)\/([A-Za-z0-9._-]+)/i.exec(q.trim());if(lk)return doInspect(lk[1]);
  S.busy="Searching Internet Archive...";paint();try{S.results=await A.search(q.trim(),S.kind);S.msg=S.results.length+" result(s). Results are not rights-checked until you inspect an item."}catch(e){S.err=e.message;S.results=null}S.busy="";paint()}
-async function doInspect(id){S.err="";S.msg="";S.busy="Inspecting "+id+"...";paint();try{S.item=await A.inspect(id);S.itemKind=S.kind;S.runs.sel=null}catch(e){S.err=e.message}S.busy="";paint()}
+async function doInspect(id){S.err="";S.msg="";S.busy="Inspecting "+id+"...";paint();try{S.item=await A.inspect(id);S.itemKind=S.kind;S.runs.sel=null;S.ov=false;S.rnVal="";S.ovVal="";S.confVal=false}catch(e){S.err=e.message}S.busy="";paint()}
+function snap(){const h=S.host;if(!h)return;const sel={};h.querySelectorAll("[data-ia-f]").forEach(c=>{if(!c.disabled)sel[c.dataset.iaF]=c.checked});S.runs.sel=sel;const g=s=>h.querySelector(s);if(g("#iano"))S.rnVal=g("#iano").value;if(g("#iaov"))S.ovVal=g("#iaov").value;if(g("#iaconf"))S.confVal=g("#iaconf").checked}
 function note(x,action,n){x.history.push({at:Date.now(),action,note:n||""})}
 function bind(h){h.onclick=e=>{const b=e.target.closest("[data-ia]");if(!b)return;const a=b.dataset.ia,v=b.dataset.v,q=Q(),x=q.find(y=>y.id===v);
  if(a==="search"){S.kind=h.querySelector("#iak").value;doSearch(h.querySelector("#iaq").value)}
  else if(a==="coll"){S.kind=h.querySelector("#iak").value;doSearch("collection:"+v)}
  else if(a==="inspect")doInspect(v);
  else if(a==="closeitem"){S.item=null;paint()}
+ else if(a==="sync"){syncNow(true)}
+ else if(a==="selall"){const on=b.type==="checkbox"?b.checked:b.dataset.v==="1";h.querySelectorAll("[data-ia-f]").forEach(c=>{if(!c.disabled)c.checked=on});h.querySelectorAll('input[data-ia="selall"]').forEach(c=>{c.checked=on})}
+ else if(a==="ovtoggle"){snap();S.ov=b.checked;paint()}
  else if(a==="rejectitem"){const it=S.item;if(!it)return;const id="ia:"+it.id;if(!q.find(y=>y.id===id)){const e2={id,source:"internet-archive",title:it.title,sourceUrl:it.url,licenseurl:it.licenseurl,collections:it.collections,rightsStatus:it.rights.status,rightsWhy:it.rights.why,kind:S.itemKind||S.kind,files:[],status:"rejected",history:[]};note(e2,"rejected","Restricted or not cleared; recorded so it is not offered as eligible");q.unshift(e2);saveQ(q)}S.item=null;S.msg="Recorded as rejected.";paint()}
- else if(a==="queue"){const it=S.item;if(!it)return;const rn=h.querySelector("#iano").value.trim();
-  if(it.rights.status!=="review-eligible")return say("This item is restricted and cannot be queued.");
-  if(!h.querySelector("#iaconf").checked)return say("Tick the box to confirm the license permits broadcast use.");if(!rn)return say("Write the rights note first.");
-  const sel=[...h.querySelectorAll("[data-ia-f]")].filter(c=>c.checked&&!c.disabled).map(c=>it.files[+c.dataset.iaF]);
-  const kind=S.itemKind||S.kind,okf=sel.filter(f=>A.validate(f,kind,it).ok);
-  if(!okf.length)return say("Check at least one file that passes the runtime and rights checks.");
-  const id="ia:"+it.id,ex=q.find(y=>y.id===id);
-  if(ex){const have=new Set(ex.files.map(f=>f.file));okf.forEach(f=>{if(!have.has(f.file))ex.files.push(f)});ex.status="pending";ex.rightsNote=rn;note(ex,"re-queued",rn)}
-  else{const n={id,source:"internet-archive",title:it.title,creator:it.creator,sourceUrl:it.url,artwork:it.artwork,licenseurl:it.licenseurl,collections:it.collections,rightsStatus:it.rights.status,rightsWhy:it.rights.why,rightsNote:rn,kind,files:okf.map(f=>({file:f.file,url:f.url,format:f.format,seconds:f.seconds,season:f.season,episode:f.episode})),status:"pending",history:[]};note(n,"queued",rn);q.unshift(n)}
-  saveQ(q);S.item=null;S.msg=okf.length+" file(s) sent to the review queue. Nothing is scheduled.";paint()}
+ else if(a==="queue"){const it=S.item;if(!it)return;snap();const ov=!!S.ov,rn=(S.rnVal||"").trim(),ovr=(S.ovVal||"").trim(),kind=S.itemKind||S.kind;
+  if(!ov&&it.rights.status!=="review-eligible")return say("This item is restricted and cannot be queued. Turn on Administrator override to queue it anyway.");
+  if(!it.available)return say("Internet Archive reports this item as unavailable, so nothing can play from it.");
+  if(!S.confVal)return say(ov?"Tick the box confirming you have the right to broadcast this.":"Tick the box to confirm the license permits broadcast use.");
+  if(!rn)return say("Write the rights note first.");if(ov&&!ovr)return say("Write why you are overriding. It is saved in the history.");
+  const sel=[...h.querySelectorAll("[data-ia-f]")].filter(c=>c.checked&&!c.disabled).map(c=>it.files[+c.dataset.iaF]).filter(f=>f&&f.url),okf=ov?sel:sel.filter(f=>A.validate(f,kind,it).ok);
+  if(!okf.length)return say(ov?"Check at least one file.":"Check at least one file that passes the runtime and rights checks.");
+  const bypass=ov?[...new Set(okf.flatMap(f=>A.validate(f,kind,it).reasons))]:[],ovo=ov?{on:true,reason:ovr,by:(window.NSSB&&NSSB.who&&NSSB.who())||"administrator",at:Date.now(),bypassed:bypass}:null;
+  const hn=rn+(ov?" | OVERRIDE: "+ovr+(bypass.length?" | bypassed: "+bypass.join("; "):""):"");
+  const id="ia:"+it.id,ex=q.find(y=>y.id===id),fl=f=>({file:f.file,url:f.url,format:f.format,seconds:f.seconds,season:f.season,episode:f.episode});
+  if(ex){const have=new Set(ex.files.map(f=>f.file));okf.forEach(f=>{if(!have.has(f.file))ex.files.push(fl(f))});ex.status="pending";ex.rightsNote=rn;if(ovo)ex.override=ovo;note(ex,ov?"re-queued (OVERRIDE)":"re-queued",hn)}
+  else{const n={id,source:"internet-archive",title:it.title,creator:it.creator,sourceUrl:it.url,artwork:it.artwork,licenseurl:it.licenseurl,collections:it.collections,rightsStatus:it.rights.status,rightsWhy:it.rights.why,rightsNote:rn,kind,files:okf.map(fl),status:"pending",history:[]};if(ovo)n.override=ovo;note(n,ov?"queued (OVERRIDE)":"queued",hn);q.unshift(n)}
+  saveQ(q);S.item=null;S.ov=false;S.runs.sel=null;S.rnVal="";S.ovVal="";S.confVal=false;S.msg=okf.length+" file(s) sent to the review queue"+(ov?" with an override on record":"")+". Nothing is scheduled.";paint()}
  else if(x){
-  if(a==="approve"){if(x.rightsStatus!=="review-eligible")return say("Restricted items cannot be approved.");if(!x.files.length)return say("No eligible files on this item.");
-   if(!confirm("You are confirming this item's license permits NorthStar to broadcast it. Approve? Each file is test-loaded first and added to the Content Library."))return;approve(x)}
+  if(a==="approve"){if(x.rightsStatus!=="review-eligible"&&!(x.override&&x.override.on))return say("Restricted items cannot be approved without an administrator override.");if(!x.files.length)return say("No eligible files on this item.");
+   if(!confirm("You are confirming this item's license permits NorthStar to broadcast it. Approve? Each file is test-loaded first and added to the Content Library."))return;approve(x,q)}
   else if(a==="reject"){const r=prompt("Reason for rejecting (optional):","")||"";const n=unpub(x);x.status="rejected";note(x,"rejected",r+(n?" | removed "+n+" library item(s)":""));saveQ(q);paint()}
   else if(a==="reopen"){const n=unpub(x);x.status="pending";note(x,"moved back to review",n?"removed "+n+" library item(s)":"");saveQ(q);paint()}
   else if(a==="drop"){if(confirm("Remove this record and its history? Its library items are removed too.")){unpub(x);saveQ(q.filter(y=>y!==x));paint()}}}};
  const k=h.querySelector("#iaq");if(k)k.onkeydown=e=>{if(e.key==="Enter")h.querySelector('[data-ia="search"]').click()}}
-window.NSIAResearch={queue:Q,state:S};
-try{const old=X.ccDraw();X.setDraw(function(sec){old(sec);if(X.tab()!=="research")return;const body=sec.querySelector("#rjroot");if(!body)return;let h=body.querySelector("#iaroot");if(!h){h=document.createElement("div");h.id="iaroot";body.appendChild(h)}S.root=body;S.host=h;paint()});if(/^#(admin|tvadmin)/.test(location.hash)&&typeof route==="function")route()}catch(e){console.warn("IA research panel",e)}
+function paintSoft(){const r=S.root;if(!r||!r.isConnected)return;const h=S.host,a=document.activeElement;if(a&&h.contains(a)&&/INPUT|TEXTAREA|SELECT/.test(a.tagName))return;paint()}
+async function syncNow(force){const ch=await pullQ();if(ch||force)paintSoft();else if(S.root&&S.root.isConnected&&SBQ.state!=="ok")paintSoft()}
+setInterval(()=>{if(S.root&&S.root.isConnected&&!document.hidden)syncNow(false)},30000);
+addEventListener("focus",()=>{if(S.root&&S.root.isConnected)syncNow(false)});
+window.NSIAResearch={queue:Q,state:S,paint,sync:{pull:pullQ,save:saveQ,st:SBQ,unpub}};
+try{const old=X.ccDraw();X.setDraw(function(sec){old(sec);if(X.tab()!=="research")return;const body=sec.querySelector("#rjroot");if(!body)return;let h=body.querySelector("#iaroot");if(!h){h=document.createElement("div");h.id="iaroot";body.appendChild(h)}S.root=body;S.host=h;paint();if(!SBQ.started){SBQ.started=1;syncNow(false)}});if(/^#(admin|tvadmin)/.test(location.hash)&&typeof route==="function")route()}catch(e){console.warn("IA research panel",e)}
 })();
 </script>
 <script id="ns-public-profiles">
