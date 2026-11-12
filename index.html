@@ -3887,7 +3887,19 @@ const D={sv:null,stats:null,acc:[],trend:null,ch:null,live:null,err:{}};let sec=
 const rpc=(n,b)=>S.req("/rest/v1/rpc/"+n,{method:"POST",auth:1,body:b||{}});
 async function load(){const t=[["stats",()=>rpc("ns_stats")],["acc",()=>S.req("/rest/v1/ns_profiles?select=*&order=created_at.desc&limit=2000",{auth:1})],["trend",()=>rpc("ns_trending",{p_days:7})],
  ["ch",async()=>{const r=await S.read("ns_lineup","snapshot");return r&&r.snapshot&&r.snapshot.channels||[]}],["live",async()=>{const r=await S.read("ns_live","live");return r&&r.live}],["sv",async()=>{const r=await S.read("ns_streaming","data",{auth:true});return r&&r.data||{queue:[]}}]];
- D.err={};await Promise.all(t.map(async([k,f])=>{try{D[k]=await f()}catch(e){D.err[k]=e.message}}));draw()}
+ t.push(["ss",async()=>{const r=await S.req("/rest/v1/ns_sync_status?select=*&id=eq.1",{auth:1});return r&&r[0]}]);D.err={};await Promise.all(t.map(async([k,f])=>{try{D[k]=await f()}catch(e){D.err[k]=e.message}}));D.ts=Date.now();draw();auto()}
+/* ---- NorthStar auto-sync: Realtime + 10s polling fallback, retry, status banner ---- */
+let autoT=null,wsk=null,hbT=null;
+async function refreshAcc(){try{D.acc=await S.req("/rest/v1/ns_profiles?select=*&order=created_at.desc&limit=2000",{auth:1});delete D.err.acc;D.ts=Date.now();D.fail=0}catch(e){D.err.acc=e.message;D.fail=(D.fail||0)+1}
+ try{const r=await S.req("/rest/v1/ns_sync_status?select=*&id=eq.1",{auth:1});D.ss=r&&r[0]}catch(e){}
+ const ae=document.activeElement;if(ae&&/^(INPUT|SELECT|TEXTAREA)$/.test(ae.tagName))return;draw()}
+function realtime(){const c=S.cfg();if(!c.ok||!S.jwt())return;try{wsk=new WebSocket(c.url.replace(/^http/,"ws")+"/realtime/v1/websocket?apikey="+c.anon+"&vsn=1.0.0");
+ wsk.onopen=()=>{wsk.send(JSON.stringify({topic:"realtime:ns",event:"phx_join",ref:"1",payload:{config:{postgres_changes:["ns_profiles","ns_channels","ns_schedule","ns_sync_status"].map(t=>({event:"*",schema:"public",table:t}))},access_token:S.jwt()}}));clearInterval(hbT);hbT=setInterval(()=>{if(wsk&&wsk.readyState===1)wsk.send(JSON.stringify({topic:"phoenix",event:"heartbeat",payload:{},ref:"h"}))},25000)};
+ wsk.onmessage=m=>{try{if(JSON.parse(m.data).event==="postgres_changes")refreshAcc()}catch(e){}};wsk.onclose=()=>{wsk=null;setTimeout(realtime,5000)};wsk.onerror=()=>{try{wsk.close()}catch(e){}}}catch(e){setTimeout(realtime,5000)}}
+function auto(){if(autoT)return;autoT=setInterval(refreshAcc,10000);realtime()}
+const _draw=draw;draw=function(){_draw();try{const t=D.ts?new Date(D.ts).toLocaleTimeString():"never",ss=D.ss||{},bad=D.err.acc||ss.last_error;
+ const h=`<div id="nsbar" style="position:sticky;top:0;z-index:50;padding:6px 12px;font:13px system-ui;background:${bad?"#5a1d1d":"#0e2a33"};color:#e8f1f3;border-bottom:1px solid #16404b">${bad?"&#9888; Sync problem: "+E(D.err.acc||ss.last_error)+" (retrying automatically)":"&#9679; Live"} &middot; admin data synced ${E(t)} &middot; guide published ${ss.last_success_at?E(new Date(ss.last_success_at).toLocaleTimeString()):"not yet"}</div>`;
+ const o=R.querySelector("#nsbar");if(o)o.remove();R.insertAdjacentHTML("afterbegin",h)}catch(e){}};
 function login(){R.innerHTML=`<div class="lg"><h2 style="font-family:Newsreader,serif;color:#d4af37;margin:0 0 8px">NorthStar Admin</h2><p style="opacity:.7">Sign in with a Supabase account listed in ns_admins. Permissions are enforced by the database.</p><input id="e" type="email" placeholder="Email" autocomplete="username"><input id="p" type="password" placeholder="Password" autocomplete="current-password"><button class="btn" id="go">Sign in</button> <a href="#home" style="margin-left:10px;color:#9fb8b8">Back to site</a><p class="err" id="m"></p></div>`;
  R.querySelector("#go").onclick=async()=>{const m=R.querySelector("#m");m.textContent="Signing in...";try{await S.signIn(R.querySelector("#e").value.trim(),R.querySelector("#p").value);load()}catch(e){m.textContent=e.message}}}
 const ago=d=>d?new Date(d).toLocaleDateString():"-";
