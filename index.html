@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.paypal.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; frame-src https:; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co https://api.weather.gov https://api.emailjs.com https://www.theaudiodb.com https://www.googleapis.com https://www.omdbapi.com https://api.gdeltproject.org https://api.themoviedb.org https://en.wikipedia.org https://api.tvmaze.com https://www.youtube.com https://www.paypal.com https://*.paypal.com https://api.open-meteo.com https://geocoding-api.open-meteo.com https://boot.pluto.tv https://service-channels.clusters.pluto.tv https://api.piped.private.coffee https://pipedapi.kavin.rocks https://pipedapi.leptons.xyz https://pipedapi.nosebs.ru https://pipedapi.reallyaweso.me https://piped-api.lunar.icu; media-src 'self' https: blob:; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.paypal.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; frame-src https:; img-src 'self' data: https:; connect-src 'self' https://archive.org https://*.supabase.co https://api.weather.gov https://api.emailjs.com https://www.theaudiodb.com https://www.googleapis.com https://www.omdbapi.com https://api.gdeltproject.org https://api.themoviedb.org https://en.wikipedia.org https://api.tvmaze.com https://www.youtube.com https://www.paypal.com https://*.paypal.com https://api.open-meteo.com https://geocoding-api.open-meteo.com https://boot.pluto.tv https://service-channels.clusters.pluto.tv https://api.piped.private.coffee https://pipedapi.kavin.rocks https://pipedapi.leptons.xyz https://pipedapi.nosebs.ru https://pipedapi.reallyaweso.me https://piped-api.lunar.icu; media-src 'self' https: blob:; upgrade-insecure-requests">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>Good Morning Northstar News</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1455,7 +1455,7 @@ details{border-radius:10px}summary{padding:4px 0}summary:hover{color:#94700f}
 "use strict";
 (function(){
 const API="/api",AK=()=>sessionStorage.getItem("gmn_admin")||"";
-async function api(p,o){o=o||{};const isF=o.body instanceof FormData;const h=Object.assign({},o.body&&!isF?{"Content-Type":"application/json"}:{},AK()?{"X-Admin-Key":AK()}:{},o.headers||{});
+async function api(p,o){o=o||{};if(/^\/profiles/.test(p)&&window.NSPUB){try{const _r=await window.NSPUB.handle(p,o);if(_r!==undefined)return _r}catch(_e){}}const isF=o.body instanceof FormData;const h=Object.assign({},o.body&&!isF?{"Content-Type":"application/json"}:{},AK()?{"X-Admin-Key":AK()}:{},o.headers||{});
  const r=await fetch(API+p,Object.assign({},o,{headers:h}));const ct=r.headers.get("content-type")||"";const j=ct.includes("json")?await r.json():await r.text();if(!r.ok)throw new Error((j&&j.detail)||("Error "+r.status));return j}
 const P=(b,h)=>({method:"POST",body:JSON.stringify(b),headers:h});
 const linkify=t=>esc(t).replace(/(^|\s)(#[a-z][\w\/-]*)/g,'$1<a href="$2">$2</a>');
@@ -2348,9 +2348,9 @@ const snap=t=>Math.floor(t/(30*MIN))*30*MIN;
 function guide(el){const we=ws+HRS*60*MIN,now=Date.now(),W=HRS*60*PXM;const list=vch().filter(c=>{if(gcat&&c.cat!==gcat)return false;if(!gq)return true;const channel=(c.name+" "+c.n).toLowerCase();if(channel.includes(gq))return true;return expand(c,ws,we).some(a=>(a.title+" "+(a.it&&a.it.series||"")).toLowerCase().includes(gq))});
  const ticks=[];for(let t=ws;t<we;t+=30*MIN)ticks.push(`<div class="cgtick" style="left:${(t-ws)/MIN*PXM}px;width:${30*PXM}px">${fmt(t)}</div>`);
  const rows=list.map(ch=>{const A=expand(ch,ws-6*36e5,we+2*36e5),o=nowOn(ch,now),lock=!canWatch(ch).ok,blocks=[];let cursor=ws;
-  const put=(st,en,cls,title,sub,lab,data)=>{const s=Math.max(st,ws),e=Math.min(en,we);if(e<=s)return;const l=(s-ws)/MIN*PXM,w=Math.max(18,(e-s)/MIN*PXM-2);blocks.push(`<button class="cgb ${cls}" style="left:${l}px;width:${w}px" data-ch="${ch.n}" ${data||""} title="${H(title)}" aria-label="${H(title)} on ${H(ch.name)}, ${H(sub.replace(/&ndash;/g," to "))}${lock?", members channel":""}" aria-describedby="cgdesc">${lab?`<i class="${lab.split(" ")[0]}">${lab}</i>`:""}${H(title)}<small>${sub}</small></button>`)};
+  const put=(st,en,cls,title,sub,lab,data,art,prog)=>{const s=Math.max(st,ws),e=Math.min(en,we);if(e<=s)return;const l=(s-ws)/MIN*PXM,w=Math.max(18,(e-s)/MIN*PXM-2);blocks.push(`<button class="cgb ${cls}${art&&w>=170?" hasart":""}" style="left:${l}px;width:${w}px" data-ch="${ch.n}" ${data||""} title="${H(title)}" aria-label="${H(title)} on ${H(ch.name)}, ${H(sub.replace(/&ndash;/g," to "))}${lock?", members channel":""}" aria-describedby="cgdesc">${lab?`<i class="${lab.split(" ")[0]}">${lab}</i>`:""}${H(title)}<small>${sub}</small>${art&&w>=170?`<img class="cga" src="https://i.ytimg.com/vi/${art}/mqdefault.jpg" alt="" loading="lazy" decoding="async">`:""}${prog!=null?`<u class="cgp" style="width:${prog}%"></u>`:""}</button>`)};
   if(ch.n===2&&o.lv){const s0=Math.min(Math.max(o.lv.t||now,ws),now);put(s0,we,"now","LIVE: "+(o.lv.title||"NorthStar Live"),"On air now","LIVE","data-live=1");cursor=we}
-  A.forEach(a=>{if(a.end<=ws||a.start>=we)return;if(ch.n===2&&o.lv&&a.end>(o.lv.t||now))return;if(a.start>cursor)put(cursor,a.start,"stby","Standby","No programming scheduled","");put(a.start,a.end,(now>=a.start&&now<a.end?"now ":a.end<now?"past ":"")+(lock?"lock":""),a.title,fmt(a.start)+"&ndash;"+fmt(a.end),typeLabel(ch,a.it),`data-t="${a.start}" data-slot="${H(a.slot)}"`);cursor=Math.max(cursor,a.end)});
+  A.forEach(a=>{if(a.end<=ws||a.start>=we)return;if(ch.n===2&&o.lv&&a.end>(o.lv.t||now))return;if(a.start>cursor)put(cursor,a.start,"stby","Standby","No programming scheduled","");put(a.start,a.end,(now>=a.start&&now<a.end?"now ":a.end<now?"past ":"")+(lock?"lock":""),a.title,fmt(a.start)+"&ndash;"+fmt(a.end),typeLabel(ch,a.it),`data-t="${a.start}" data-slot="${H(a.slot)}"`,(!lock&&a.it&&/^[\w-]{11}$/.test(String(a.it.yt||"").trim().slice(-11)))?String(a.it.yt).trim().slice(-11):"",(now>=a.start&&now<a.end)?Math.round((now-a.start)/(a.end-a.start)*100):null);cursor=Math.max(cursor,a.end)});
   if(cursor<we)put(cursor,we,"stby","Standby","No programming scheduled","");
   return`<div class="cgr"><button class="cgc ${ch.n===sel?"on":""}" data-ch="${ch.n}" data-testid="tv-channel-${ch.n}">${logo(ch)}<span><b>${H(ch.name)}</b><small>${CATN[ch.cat]||""}${lock?" &middot; members":""}</small></span></button><div class="cgbody" style="width:${W}px">${blocks.join("")}</div></div>`}).join("");
  const nl=now>=ws&&now<we?`<div class="cgnow" style="left:${168+(now-ws)/MIN*PXM}px" data-testid="tv-now-line"></div>`:"";
@@ -4370,5 +4370,133 @@ hook();setTimeout(hook,500);
 document.addEventListener("DOMContentLoaded",()=>{const e=document.createElement("div");e.id="nsas";e.setAttribute("role","status");e.style.cssText="position:fixed;left:12px;bottom:12px;z-index:99998;color:#fff;border:1px solid #ffffff44;border-radius:999px;padding:6px 12px;font:600 12px system-ui,sans-serif;display:none;max-width:70vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis";document.body.appendChild(e);paint(e)});
 })();
 </script>
+<script id="ns-ia-adapter">
+/* NorthStar Internet Archive adapter. Search + inspect only. It NEVER marks anything as cleared to broadcast.
+   Rights: an upload to Internet Archive is not permission to rebroadcast. Only an explicit open license
+   (Creative Commons / public-domain statement) or a collection known to be open can reach "review-eligible".
+   Everything else stays "restricted-unverified" and is blocked from auto-scheduling. */
+(function(){"use strict";
+const B="https://archive.org",MIN_TV_SEC=22*60;
+const OPEN_LIC=/creativecommons\.org\/(licenses\/(by|by-sa|by-nd|by-nc|by-nc-sa|by-nc-nd)|publicdomain)\//i;
+const OPEN_COLL=/^(prelinger|opensource_movies|publicdomainmovies|classic_tv|classic_cartoons|ephemera|feature_films|animationandcartoons)$/i;
+const BLOCK_COLL=/^(television_inbox|tv|television)$/i;
+async function j(u){const c=new AbortController(),t=setTimeout(()=>c.abort(),15000);try{const r=await fetch(u,{signal:c.signal,cache:"no-store"});if(!r.ok)throw new Error("HTTP "+r.status);return await r.json()}catch(e){throw new Error(e.name==="AbortError"?"Internet Archive did not answer in time":("Internet Archive request failed: "+e.message))}finally{clearTimeout(t)}}
+const arr=v=>v==null?[]:Array.isArray(v)?v:[v];
+async function search(q,kind){const mt=kind==="music"?"audio":"movies";
+ const u=B+"/advancedsearch.php?q="+encodeURIComponent("("+q+") AND mediatype:"+mt)+"&fl[]=identifier&fl[]=title&fl[]=creator&fl[]=licenseurl&fl[]=collection&fl[]=date&rows=25&output=json";
+ const d=await j(u);return(d.response&&d.response.docs||[]).map(x=>({id:x.identifier,title:x.title,creator:arr(x.creator).join(", "),date:x.date||"",collections:arr(x.collection),licenseurl:x.licenseurl||""}))}
+function rights(m){const md=m.metadata||{},lic=String(md.licenseurl||""),col=arr(md.collection);
+ if(OPEN_LIC.test(lic))return{status:"review-eligible",why:"Item carries an open license URL: "+lic+". An administrator must still confirm the license permits broadcast use."};
+ if(col.some(c=>BLOCK_COLL.test(c)))return{status:"restricted-unverified",why:"Sits in an uncurated television upload collection ("+col.filter(c=>BLOCK_COLL.test(c)).join(", ")+") with no license field. User uploads of commercial TV are not rebroadcast permission."};
+ if(col.some(c=>OPEN_COLL.test(c))&&!lic)return{status:"review-eligible",why:"In a curated open collection ("+col.filter(c=>OPEN_COLL.test(c)).join(", ")+") but no explicit license field. Administrator must confirm before use."};
+ return{status:"restricted-unverified",why:"No license URL and no known open collection. Treated as not cleared."}}
+const PLAY=/\.(mp4|m4v|webm|ogv|mp3|ogg|oga|flac)$/i;
+async function inspect(id){const m=await j(B+"/metadata/"+encodeURIComponent(id));
+ if(!m||!m.metadata)throw new Error("Item not found or not available: "+id);
+ const files=(m.files||[]).filter(f=>PLAY.test(f.name||"")&&f.source!=="metadata"),md=m.metadata,rt=rights(m);
+ const eps=files.map(f=>{const sec=parseFloat(f.length)||0,sx=/S(\d{1,2})E(\d{1,3})/i.exec(f.name);
+  return{file:f.name,format:f.format||"",seconds:sec,runtimeKnown:sec>0,season:sx?+sx[1]:null,episode:sx?+sx[2]:null,size:+f.size||0,
+   url:B+"/download/"+encodeURIComponent(id)+"/"+f.name.split("/").map(encodeURIComponent).join("/")}});
+ return{source:"internet-archive",id,url:B+"/details/"+id,title:md.title||id,creator:arr(md.creator).join(", "),description:String(md.description||"").slice(0,600),
+  date:md.date||md.publicdate||"",collections:arr(md.collection),licenseurl:md.licenseurl||"",artwork:B+"/services/img/"+encodeURIComponent(id),
+  available:!m.is_dark&&!md.noindex,rights:rt,files:eps}}
+/* TV/movie validation per the plan: runtime must be VERIFIED and >= 22 min; unknown runtime is never auto-scheduled; trailers/clips/promos rejected */
+const JUNK=/\b(trailer|teaser|promo|clip|highlight|reaction|review|recap|sample|preview|behind the scenes)\b/i;
+function validate(file,kind,item){const r=[];
+ if(kind!=="music"){if(JUNK.test(file.file))r.push("looks like a trailer, clip or promo");
+  if(!file.runtimeKnown)r.push("runtime unknown, so it cannot be auto-scheduled");else if(file.seconds<MIN_TV_SEC)r.push("verified runtime "+Math.round(file.seconds/60)+" min is under the 22 min minimum")}
+ if(!item.available)r.push("item unavailable");
+ if(item.rights.status!=="review-eligible")r.push("rights not cleared: "+item.rights.why);
+ return{ok:!r.length,autoSchedule:!r.length,reasons:r}}
+window.NSIA={search,inspect,validate,rights,minTvSeconds:MIN_TV_SEC};
+})();
+</script>
+<script id="ns-public-profiles">
+/* Public profiles on Supabase (ns_public_profiles view + ns_upsert_my_profile). Tried first; if Supabase is unconfigured,
+   the viewer is not signed in, or a call fails, the site falls back to its original /api behaviour. Email is never read here. */
+(function(){"use strict";
+const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,MAP="ns_pid_map";
+const cfg=()=>window.NSSB&&window.NSSB.cfg().ok?window.NSSB.cfg():null;
+const mapGet=()=>{try{return JSON.parse(localStorage.getItem(MAP)||"{}")}catch(e){return{}}};
+const mapSet=(k,v)=>{try{const m=mapGet();m[k]=v;localStorage.setItem(MAP,JSON.stringify(m))}catch(e){}};
+async function call(path,o){const c=cfg();if(!c)throw new Error("no supabase");o=o||{};const t=o.auth?(window.NSAUTH?await window.NSAUTH.tok():""):"";if(o.auth&&!t)throw new Error("not signed in");
+ const r=await fetch(c.url+path,{method:o.method||"GET",headers:Object.assign({apikey:c.anon,Authorization:"Bearer "+(t||c.anon)},o.body?{"Content-Type":"application/json"}:{}),body:o.body?JSON.stringify(o.body):undefined,cache:"no-store"});
+ const j=await r.json().catch(()=>null);if(!r.ok)throw new Error((j&&(j.message||j.hint))||("HTTP "+r.status));return j}
+const out=r=>({id:r.id,name:r.display_name||r.username||"Member",bio:r.bio||"",tagline:r.tagline||"",accent:r.accent||"#b38b1d",avatar:r.avatar_url||"",banner:r.banner_url||"",banner_ar:+r.banner_ar||3,show_badges:!!r.show_badges,badges:r.badges||[],followers:0,following:0,likes:0,viewer_follows:false,viewer_likes:false});
+async function handle(p,o){const method=(o&&o.method)||"GET",m=/^\/profiles(?:\/([^/?]+))?(?:\?.*)?$/.exec(p);if(!m||!cfg())return;
+ const id=m[1]?decodeURIComponent(m[1]):"";
+ if(method==="GET"&&!id){const L=await call("/rest/v1/ns_public_profiles?select=*&order=created_at.desc&limit=100");return L.map(out)}
+ if(method==="GET"){const uid=UUID.test(id)?id:(mapGet()[id]||"");if(!uid)return;
+  const L=await call("/rest/v1/ns_public_profiles?select=*&id=eq."+uid);
+  if(L&&L[0])return out(L[0]);
+  if(mapGet()[id])return{id:uid,followers:0,following:0,likes:0};return}
+ if(method==="PUT"&&id){const b=JSON.parse(o.body||"{}");const r=await call("/rest/v1/rpc/ns_upsert_my_profile",{method:"POST",auth:1,body:{p:b}});if(r&&r.id)mapSet(id,r.id);return r}
+}
+window.NSPUB={handle,UUID};
+})();
+</script>
+<script id="ns-viewer-realtime">
+/* Viewer-side live updates: when an admin publishes the lineup or changes live state, open browsers re-pull within ~1.5 s
+   instead of waiting for the 60 s refresh. The existing 60 s poll stays as the fallback. Playback is never restarted here:
+   it only calls the same NSS.pull() the poll already uses. */
+(function(){"use strict";const S=window.NSSB;if(!S)return;
+const RT=window.NSREALTIME={state:"idle",at:0,events:0};let ws=null,hb=0,back=2000,deb=0,stop=0;
+const emit=()=>{try{window.dispatchEvent(new CustomEvent("ns-realtime"))}catch(e){}};
+function poke(){RT.events++;RT.at=Date.now();clearTimeout(deb);deb=setTimeout(()=>{try{if(window.NSS&&window.NSS.pull)window.NSS.pull()}catch(e){}},1500);emit()}
+function connect(){if(stop||ws)return;const c=S.cfg();if(!c.ok||typeof WebSocket==="undefined"){RT.state="off";return}
+ try{ws=new WebSocket(c.url.replace(/^http/,"ws")+"/realtime/v1/websocket?apikey="+encodeURIComponent(c.anon)+"&vsn=1.0.0");
+  ws.onopen=()=>{back=2000;RT.state="connected";emit();
+   ws.send(JSON.stringify({topic:"realtime:ns-public",event:"phx_join",ref:"1",payload:{config:{postgres_changes:["ns_lineup","ns_live","ns_schedule"].map(t=>({event:"*",schema:"public",table:t}))},access_token:c.anon}}));
+   clearInterval(hb);hb=setInterval(()=>{try{ws.send(JSON.stringify({topic:"phoenix",event:"heartbeat",payload:{},ref:"h"}))}catch(e){}},25e3)};
+  ws.onmessage=e=>{try{const m=JSON.parse(e.data);if(m.event==="postgres_changes"||(m.payload&&m.payload.data&&m.payload.data.table))poke()}catch(x){}};
+  ws.onclose=()=>{clearInterval(hb);ws=null;RT.state="reconnecting";emit();setTimeout(connect,back);back=Math.min(back*2,60000)};
+  ws.onerror=()=>{try{ws.close()}catch(e){}}}catch(e){ws=null;RT.state="error";setTimeout(connect,back);back=Math.min(back*2,60000)}}
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&!ws)connect()});window.addEventListener("online",()=>{if(!ws)connect()});
+setTimeout(connect,2500);
+})();
+</script>
+<style id="ns-tvframe-css">
+/* NorthStar "Smart TV" frame: a skin around the EXISTING player. Same player, same controls, same channels; only presentation.
+   Off automatically in fullscreen, on real TV browsers (TVMODE) and when the viewer switches the frame off. */
+html.nssam .tvx{background:radial-gradient(ellipse 70% 55% at 50% 38%,rgba(70,120,210,.30),rgba(5,7,13,0) 70%),#05070d;color:#e8eefc;padding:22px 0 18px}
+html.nssam .tvx .mute,html.nssam .tvx small{color:#9fb0d0}
+html.nssam .tvx a:not(.btn){color:#8fc4ff}
+html.nssam .tvx .tvstage{border-radius:6px;box-shadow:0 0 0 7px #0a0b0e,0 0 0 8px #3b4048,0 0 0 9px #0a0b0e,0 28px 70px rgba(0,0,0,.65),0 0 90px rgba(70,120,210,.22)}
+html.nssam .tvx .tvstage:fullscreen,html.nssam .tvx .tvstage:-webkit-full-screen{box-shadow:none;border-radius:0}
+html.nssam .nssam-chin{width:min(100%,calc((100vh - 110px)*16/9));margin:9px auto 0;box-sizing:border-box;height:30px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;
+ background:linear-gradient(#2b2f36,#16181c);border:1px solid #3b4048;border-top:0;border-radius:0 0 10px 10px;position:relative;font:600 11px system-ui,sans-serif;letter-spacing:.32em;color:#c9d3e6;text-transform:uppercase}
+html.nssam .nssam-chin b{letter-spacing:.42em;color:#eaf1ff;font-weight:700}
+html.nssam .nssam-chin .led{display:inline-block;width:7px;height:7px;border-radius:50%;background:#3ddc84;box-shadow:0 0 8px #3ddc84;margin-right:9px;vertical-align:1px}
+html.nssam .nssam-chin button{all:unset;cursor:pointer;font:600 10px system-ui,sans-serif;letter-spacing:.14em;color:#8fa0bf;padding:4px 6px;border-radius:4px}
+html.nssam .nssam-chin button:hover,html.nssam .nssam-chin button:focus-visible{color:#fff;outline:1px solid #5a6a8a}
+html.nssam .nssam-chin::after{content:"";position:absolute;left:50%;top:100%;width:38%;height:9px;transform:translateX(-50%);background:linear-gradient(#3a3e46,#1a1c21);border-radius:0 0 12px 12px;box-shadow:0 10px 24px rgba(0,0,0,.55)}
+html.nssam .tvx>.tvw.tvbelow{margin-top:22px}
+html.nssam:not(.nssam-on) .nssam-chin{display:none}
+@media(max-width:700px){html.nssam .tvx{padding:10px 0 8px}html.nssam .tvx .tvstage{box-shadow:0 0 0 3px #0a0b0e,0 0 0 4px #3b4048,0 12px 30px rgba(0,0,0,.6)}html.nssam .nssam-chin{height:22px;margin-top:6px;letter-spacing:.2em;font-size:9px}html.nssam .nssam-chin::after{display:none}html.nssam .nssam-chin button{display:none}}
+html.nssam-off .nssam-chin{display:none}
+</style>
+<script id="ns-tvframe">
+(function(){"use strict";
+const KEY="ns_tvframe",tvBrowser=/Xbox|PlayStation|SmartTV|Tizen|Web0S|WebOS|AFT|Roku|Android TV|GoogleTV/i.test(navigator.userAgent)||/[?&]tv=1/.test(location.search);
+const wants=()=>{try{return localStorage.getItem(KEY)!=="0"}catch(e){return true}};
+let t=0;
+function chinHTML(on){return'<span><i class="led"></i><b>NorthStar</b></span><span>Live TV</span><button type="button" data-nssam="toggle" aria-label="Turn the TV frame off">Frame: '+(on?"on":"off")+'</button>'}
+function apply(){const st=document.getElementById("tvst"),h=document.documentElement,on=!!st&&!tvBrowser&&wants();
+ h.classList.toggle("nssam",!!st&&!tvBrowser);h.classList.toggle("nssam-off",!!st&&!tvBrowser&&!wants());h.classList.toggle("nssam-on",on);
+ let c=document.getElementById("nssam-chin");
+ if(!st||tvBrowser){if(c)c.remove();return}
+ if(!c){c=document.createElement("div");c.id="nssam-chin";c.className="nssam-chin";c.setAttribute("role","presentation");st.insertAdjacentElement("afterend",c);
+  c.addEventListener("click",e=>{if(!e.target.closest('[data-nssam="toggle"]'))return;try{localStorage.setItem(KEY,wants()?"0":"1")}catch(x){}apply()})}
+ const want=chinHTML(wants());if(c.dataset.s!==String(wants())){c.innerHTML=want;c.dataset.s=String(wants())}}
+const q=()=>{clearTimeout(t);t=setTimeout(apply,60)};
+new MutationObserver(q).observe(document.getElementById("app")||document.body,{childList:true,subtree:true});
+window.addEventListener("hashchange",q);q();
+})();
+</script>
+<style id="ns-guide-art-css">
+.cgb.hasart{padding-right:96px}
+.cgb .cga{position:absolute;right:5px;top:5px;bottom:5px;height:calc(100% - 10px);aspect-ratio:16/9;width:auto;max-width:86px;object-fit:cover;border-radius:5px;border:1px solid rgba(255,255,255,.18);background:#0c1530}
+.cgb .cgp{position:absolute;left:0;bottom:0;height:3px;background:#ffd166;border-radius:0 2px 2px 0;text-decoration:none}
+</style>
 </body>
 </html>
