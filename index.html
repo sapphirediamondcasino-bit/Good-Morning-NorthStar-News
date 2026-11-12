@@ -192,8 +192,9 @@ async function signIn(email,pw){const c=cfg();if(!c.ok)throw new Error("Enter th
  putSess({token:j.access_token,refresh:j.refresh_token||"",exp:Date.now()+(j.expires_in||3600)*1e3,email});
  let ok=false;try{ok=await isAdmin()}catch(e){signOut();throw e}
  if(!ok){signOut();throw new Error("Signed in, but "+email+" is not on the ns_admins allow-list, so it cannot publish. Insert that email into public.ns_admins (see the setup instructions).")}
+ try{sessionStorage.setItem("ns_sb_admin_ok",String(Date.now()))}catch(e){}
  return true}
-function signOut(){try{sessionStorage.removeItem(JWT)}catch(e){}}
+function signOut(){try{sessionStorage.removeItem(JWT);sessionStorage.removeItem("ns_sb_admin_ok")}catch(e){}}
 setInterval(()=>{if(sess())ensure()},60e3);
 window.NSSB={cfg,saveCfg,jwt,who,read,write,signIn,signOut,isAdmin,ensure,req};
 })();
@@ -591,7 +592,7 @@ SEED2.push(...EXTRA,...EXTRA2);SEED2.forEach((x,i)=>{if(!posts.some(p=>p.id===x.
 const me=()=>users.find(u=>u.id===session);
 setTimeout(async()=>{try{const u=me();if(!u||!window.NSAUTH)return;const pr=await NSAUTH.prof();if(!pr)return;if(pr.status==="suspended"){session=null;DB.set("session",null);NSAUTH.out();route();return}NSAUTH.apply(u,pr);save()}catch(e){}},1500);
 const role=u=>!u?"guest":u.email===CFG.FOUNDER?"founder":u.email===CFG.CEO?"ceo":staff.some(s=>s.k===u.email||(u.discord&&s.k===u.discord))?"staff":"user";
-const isAdmin=u=>["founder","ceo","staff"].includes(role(u));
+const sbAdm=()=>{try{return !!(window.NSSB&&NSSB.jwt()&&sessionStorage.getItem("ns_sb_admin_ok"))}catch(e){return false}};const isAdmin=u=>["founder","ceo","staff"].includes(role(u))||sbAdm();
 const badges=u=>{const r=role(u),b=[];if(r==="founder")b.push('<span class="tag f">Founder</span>');if(r==="ceo")b.push('<span class="tag c">CEO</span>');if(r==="staff")b.push('<span class="tag n">Staff</span>');
  if(u.plan&&u.planEnd>now())b.push(`<span class="tag">${esc(u.plan)}</span>`);const n=posts.filter(p=>p.uid===u.id&&p.status==="live").length;
  if(n>=1)b.push('<span class="tag">First story</span>');if(n>=5)b.push('<span class="tag">Reporter</span>');if(n>=20)b.push('<span class="tag">Columnist</span>');
@@ -3907,6 +3908,7 @@ window.NSTRACK=function(o){try{var S=window.NSSB,c=S&&S.cfg();if(!c||!c.ok||!o||
 #nsc .sb .on{background:linear-gradient(90deg,#9bd8ff,#3d8fd6);box-shadow:0 6px 18px #3d8fd655}
 #nsc .c{border-radius:18px;background:linear-gradient(180deg,#0f2147,#0b1a38);box-shadow:0 8px 24px #0006}
 #nsc .c.g{background:linear-gradient(135deg,#9bd8ff,#2f6fb0)}
+#nsc .rc .tr,#nsc .rc p{white-space:normal;overflow-wrap:anywhere;word-break:normal}
 #nsc .mute{opacity:.65}#nsc h4{margin:0 0 6px;font-size:13px;color:#9bb4dc}
 #nsc .two{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
 #nsc .seg{display:flex;gap:4px}#nsc .seg button{background:#0d1c3d;border:1px solid #1d3a6e;color:#a9bfe6;border-radius:8px;padding:5px 10px;cursor:pointer;font:inherit}#nsc .seg .on{background:#2b7fd8;color:#fff}
@@ -3941,7 +3943,7 @@ function realtime(){const c=S.cfg();if(!c.ok||!S.jwt())return;try{wsk=new WebSoc
  wsk.onmessage=m=>{try{if(JSON.parse(m.data).event==="postgres_changes")refreshAcc()}catch(e){}};wsk.onclose=()=>{wsk=null;setTimeout(realtime,5000)};wsk.onerror=()=>{try{wsk.close()}catch(e){}}}catch(e){setTimeout(realtime,5000)}}
 function auto(){if(autoT)return;autoT=setInterval(refreshAcc,10000);realtime()}
 
-const NAV=[["dash","Dashboard"],["users","Users & Accounts"],["prof","Public Profiles"],["subs","Subscriptions & Access"],["chan","Channels"],["live","Live TV"],["guide","TV Guide"],["sched","Global Scheduler"],["mov","Movies"],["shows","TV Shows"],["mus","Music"],["lib","Content Library"],["ai","AI Research & Imports"],["stream","Streaming Services"],["pluto","Pluto TV"],["ads","Advertising & Sponsors"],["od","On-Demand"],["ops","Network Operations"],["sec","Security & Permissions"],["set","Network Settings"]];
+const NAV=[["dash","Dashboard"],["users","Users & Accounts"],["prof","Public Profiles"],["subs","Subscriptions & Access"],["chan","Channels"],["live","Live TV"],["guide","TV Guide"],["sched","Global Scheduler"],["mov","Movies"],["shows","TV Shows"],["mus","Music"],["lib","Content Library"],["ai","AI Research & Imports"],["stream","Streaming Services"],["pluto","Pluto TV"],["ads","Advertising & Sponsors"],["od","On-Demand"],["game","Games & Entertainment"],["ops","Network Operations"],["sec","Security & Permissions"],["set","Network Settings"]];
 const FRM=k=>{const n=NAV.find(x=>x[0]===k);return n&&n[2]||null};
 const cnt=f=>(D.acc||[]).filter(f).length;
 const card=(h,b)=>`<div class="c"><h3 style="margin:0 0 10px">${h}</h3>${b}</div>`;
@@ -4002,7 +4004,7 @@ function schedPageBind(){const X=window.NSX,g=i=>R.querySelector("#"+i),bad=m=>{
  R.querySelectorAll("[data-scy]").forEach(b=>b.onclick=()=>{const to=+g("scc").value,x=X.slots(SC.v).find(y=>y.id===b.dataset.scy);if(!x)return;if(to===SC.v)return bad("Pick a different channel in the form above first, then press Copy.");const T=X.slots(to).slice();T.push(Object.assign({},x,{id:X.uid2("s")}));X.saveSl(to,T);dirty();ok("Copied to channel "+to+". Press Publish lineup to send it to viewers.")})}
 const _d4=draw;draw=function(){_d4();try{if(sec==="sched")schedPageBind()}catch(e){console.error(e)}};
 /* ===== NorthStar Admin v2: analytics dashboard, popular panel, native Live/Guide/Library/Settings pages ===== */
-const IC={dash:"◧",users:"☺",prof:"◉",subs:"★",chan:"▤",live:"●",guide:"▥",sched:"◷",mov:"▶",shows:"▣",mus:"♪",lib:"❒",ai:"✦",stream:"⇄",pluto:"◌",ads:"¢",od:"⏵",ops:"✚",sec:"⚿",set:"⚙"};
+const IC={game:"◈",dash:"◧",users:"☺",prof:"◉",subs:"★",chan:"▤",live:"●",guide:"▥",sched:"◷",mov:"▶",shows:"▣",mus:"♪",lib:"❒",ai:"✦",stream:"⇄",pluto:"◌",ads:"¢",od:"⏵",ops:"✚",sec:"⚿",set:"⚙"};
 const AN={days:7},LB={q:"",r:"",miss:0,pg:0},GD={q:"",pg:0},LV={msg:"",bad:0},ST={msg:"",bad:0};
 const XN=()=>window.NSX,n0=v=>v==null?"n/a":typeof v==="number"?v.toLocaleString():String(v);
 function libMap(){const m={},X=XN();if(X)X.lib().forEach(it=>{m[it.id]=it;if(it.yt)m[it.yt]=it});return m}
@@ -4058,11 +4060,11 @@ function guideHTML(){const X=XN();if(!X)return card("TV Guide","<p class='err'>E
   return`<tr><td class="stk"><b>${E(c.n)}</b> ${E(c.name)}<br><span class="pill ${c.acc==="premium"?"p":""}">${c.acc==="premium"?"Paid":"Free"}</span></td>${P.length?P.map(p=>`<td class="${p.start<=now?"gnow":""}">${p.start<=now?'<span class="pill">LIVE</span> ':""}<b>${E(p.title)}</b><br><span class="mute">${hm(p.start)} - ${hm(p.end)}</span></td>`).join(""):'<td colspan="4" class="mute">Nothing scheduled</td>'}</tr>`}).join("");
  return`<div class="c"><div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px"><input id="gdq" placeholder="Search channel" value="${E(GD.q)}" style="${inp}"><span class="mute">${a.length} channels. Same schedule source as the viewer guide.</span></div><div style="overflow-x:auto"><table class="gt"><tr><th class="stk">Channel</th><th>Now</th><th>Next</th><th>Later</th><th>Later</th></tr>${rows}</table></div><div style="margin-top:10px">Page ${GD.pg+1}/${pages} <button class="btn s" id="gdp">Prev</button> <button class="btn s" id="gdn">Next</button></div></div>`}
 /* ---- Movies / Shows / Music / Library ---- */
-const LK={mov:"Movies",shows:"TV Shows",mus:"Music",lib:"Content Library"};
+const LK={game:"Games & Entertainment",mov:"Movies",shows:"TV Shows",mus:"Music",lib:"Content Library"};
 function libHTML(){const X=XN();if(!X)return card("Library","<p class='err'>Engine not loaded.</p>");const L0=X.lib(),seen={};L0.forEach(x=>{const k=x.yt||((x.title||"")+"|"+(x.season||"")+"|"+(x.ep||"")).toLowerCase();seen[k]=(seen[k]||0)+1});const dup=x=>seen[x.yt||((x.title||"")+"|"+(x.season||"")+"|"+(x.ep||"")).toLowerCase()]>1;
- const f=L0.filter(x=>(sec==="mov"?x.type==="movie":sec==="shows"?(x.type==="episode"||x.series):sec==="mus"?/music|song|video/i.test(x.type||""):true)&&(!LB.q||((x.title||"")+" "+(x.series||"")).toLowerCase().includes(LB.q))&&(!LB.r||x.rights===LB.r)&&(!LB.miss||!x.yt)),pages=Math.max(1,Math.ceil(f.length/25));LB.pg=Math.min(LB.pg,pages-1);
+ const f=L0.filter(x=>(sec==="game"?/game|trivia|quiz|puzzle|arcade|contest/i.test((x.title||"")+" "+(x.tags||"")+" "+(x.series||"")):sec==="mov"?x.type==="movie":sec==="shows"?(x.type==="episode"||x.series):sec==="mus"?/music|song|video/i.test(x.type||""):true)&&(!LB.q||((x.title||"")+" "+(x.series||"")).toLowerCase().includes(LB.q))&&(!LB.r||x.rights===LB.r)&&(!LB.miss||!x.yt)),pages=Math.max(1,Math.ceil(f.length/25));LB.pg=Math.min(LB.pg,pages-1);
  const inp="background:#0d1c3d;border:1px solid #1d3a6e;color:inherit;border-radius:8px;padding:7px 10px",R2=X.RIGHTS||{};
- return`<div class="c"><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px"><b>${LK[sec]}</b><input id="lbq" placeholder="Search title or series" value="${E(LB.q)}" style="${inp}"><select id="lbr" style="${inp}"><option value="">Any approval status</option>${Object.keys(R2).map(k=>`<option value="${k}" ${LB.r===k?"selected":""}>${E(R2[k])}</option>`).join("")}</select><label><input type="checkbox" id="lbm" ${LB.miss?"checked":""}> Missing link only</label><span class="mute">${f.length} of ${L0.length} entries</span></div>
+ return`<div class="c">${sec==="game"?'<p class="mute">NorthStar has no interactive games yet. This page lists game-show, trivia and entertainment programming from the library so it can be reviewed and scheduled like any other title.</p>':""}<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px"><b>${LK[sec]}</b><input id="lbq" placeholder="Search title or series" value="${E(LB.q)}" style="${inp}"><select id="lbr" style="${inp}"><option value="">Any approval status</option>${Object.keys(R2).map(k=>`<option value="${k}" ${LB.r===k?"selected":""}>${E(R2[k])}</option>`).join("")}</select><label><input type="checkbox" id="lbm" ${LB.miss?"checked":""}> Missing link only</label><span class="mute">${f.length} of ${L0.length} entries</span></div>
  <div style="overflow-x:auto"><table><tr><th>Art</th><th>Title</th><th>Type</th><th>Season / Ep</th><th>Min</th><th>Approval</th><th>Playback source</th><th>Can air</th><th></th></tr>${f.slice(LB.pg*25,LB.pg*25+25).map(x=>`<tr><td>${art(x)?`<img src="${E(art(x))}" alt="" width="56" height="32" loading="lazy" style="border-radius:6px;object-fit:cover">`:""}</td><td><b>${E(x.series?x.series+" - ":"")}${E(x.title)}</b>${dup(x)?' <span class="pill x">Possible duplicate</span>':""}</td><td>${E(x.type||"")}</td><td>${E(x.season||"")}${x.ep?" / "+E(x.ep):""}</td><td>${E(x.dur||"")}${x.est?" (est.)":""}</td><td><span class="pill ${x.rights==="pending"?"x":""}">${E(R2[x.rights]||x.rights||"")}</span></td><td>${x.yt?"YouTube link":'<span class="pill x">Missing</span>'}</td><td>${X.schedulable(x)?"Yes":"No"}</td><td><button class="btn s" data-le="${E(x.id)}">Edit</button></td></tr>`).join("")||'<tr><td colspan="9">No entries match.</td></tr>'}</table></div><div style="margin-top:10px">Page ${LB.pg+1}/${pages} <button class="btn s" id="lbp">Prev</button> <button class="btn s" id="lbn">Next</button></div><p class="mute">Edits save to the library the scheduler uses. Nothing is deleted here, and approval history is untouched. Pluto, AI import and ad tools open under their own sections.</p></div>`}
 /* ---- Network Settings ---- */
 function setHTML(){const c=S.cfg(),ss=D.ss||{};return card("Supabase connection",`<table><tr><td>Project URL</td><td>${E(c.url)}</td></tr><tr><td>Signed in as</td><td>${E(S.who())}</td></tr><tr><td>Realtime</td><td>${wsk&&wsk.readyState===1?"Connected":"Reconnecting (10 s polling keeps data fresh)"}</td></tr><tr><td>Last data refresh</td><td>${D.ts?E(new Date(D.ts).toLocaleTimeString()):"never"}</td></tr><tr><td>Guide published</td><td>${ss.last_success_at?E(new Date(ss.last_success_at).toLocaleString()):"not yet"}${ss.last_error?' <span class="err">'+E(ss.last_error)+"</span>":""}</td></tr></table><p><button class="btn" id="stpub">Publish lineup to viewers</button></p>${ST.msg?`<p style="color:${ST.bad?"#ffb4b4":"#5fe0b5"}">${E(ST.msg)}</p>`:""}<p class="mute">Only the public anon key is used here. Secrets and service-role keys never belong in this file. Edit the URL or key in the older Network settings tab if the project changes.</p>`)}
@@ -4146,7 +4148,7 @@ function bindAI(){if(sec!=="ai")return;const h=R.querySelector("#aihost");if(!h)
 const _dAI=draw;draw=function(){_dAI();try{bindAI()}catch(e){console.error(e)}};
 
 function usersNote(){const n=(D.acc||[]).length;return`<div class="c" style="margin-bottom:14px;border-color:#d4af37"><b>${n} account${n===1?"":"s"} in Supabase${D.err.acc?" (load failed: "+E(D.err.acc)+")":""}.</b><p class="mute" style="margin:6px 0 0">A viewer appears here only after they register or log in on the site. Accounts created in a browser before this was set up exist only in that browser. Ask each person to log out and log in once, with their password; a red message appears on their screen if registration fails, and says why. Supabase needs passwords of 6+ characters, and "Confirm email" must be off (or the person must confirm) for the account to show.</p></div>`}
-const NATIVE={ai:aiHTML,ads:adsHTML,od:odHTML,pluto:plutoHTML,sched:()=>schedPageHTML(),chan:()=>chanHTML(),dash:()=>dash(),stream:()=>stream(),users:()=>usersNote()+card("Users &amp; Accounts",accTable(true)),subs:subsHTML,prof:profHTML,ops:opsHTML,sec:secHTML,live:liveHTML,guide:guideHTML,mov:libHTML,shows:libHTML,mus:libHTML,lib:libHTML,set:setHTML};
+const NATIVE={game:libHTML,ai:aiHTML,ads:adsHTML,od:odHTML,pluto:plutoHTML,sched:()=>schedPageHTML(),chan:()=>chanHTML(),dash:()=>dash(),stream:()=>stream(),users:()=>usersNote()+card("Users &amp; Accounts",accTable(true)),subs:subsHTML,prof:profHTML,ops:opsHTML,sec:secHTML,live:liveHTML,guide:guideHTML,mov:libHTML,shows:libHTML,mus:libHTML,lib:libHTML,set:setHTML};
 const _dV2=draw;draw=function(){_dV2();try{bindV2()}catch(e){console.error(e)}};
 const secBody=()=>{const fr=FRM(sec);return fr?`<iframe id="ccf" data-tab="${fr.tab||""}" src="${fr.route||"#admin"}" style="width:100%;height:100%;border:0;background:#060f22"></iframe>`:(NATIVE[sec]||NATIVE.users)()};
 const _draw=draw;draw=function(){_draw();try{
@@ -4210,5 +4212,16 @@ addEventListener("hashchange",chk);chk();
 })();
 </script>
 
+
+<script id="ns-cc-fix">
+/* Command Center: visible Supabase sign-in + sync status, so Go Live and publishing reach viewers without hunting through old tabs. */
+(function(){"use strict";if(typeof V==="undefined"||!V.command)return;const prev=V.command,H=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+V.command=function(a,el){prev.apply(this,arguments);try{const S=window.NSSB;if(!S||el.querySelector("#ccsb"))return;const on=!!S.jwt(),c=document.createElement("div");c.id="ccsb";c.className="card";c.setAttribute("data-testid","cc-supabase");
+ c.innerHTML=on?`<h3 style="margin-top:0">Viewer sync: connected</h3><p>Signed in to Supabase as <b>${H(S.who())}</b>. Go Live, End Live and Publish reach viewers and are confirmed by reading them back. <a class="btn alt" href="#console">Open the new admin console</a> <button class="btn alt" id="ccso">Sign out</button></p>`:`<h3 style="margin-top:0">Viewer sync: not signed in</h3><p class="mute">Changes here stay on this browser until you sign in with your Supabase admin account. Viewers on other devices will not see them.</p><div class="filters"><input id="ccse" type="email" placeholder="Supabase admin email" autocomplete="username"><input id="ccsp" type="password" placeholder="Password" autocomplete="current-password"></div><button class="btn" id="ccsi">Sign in</button> <a class="btn alt" href="#console">Open the new admin console</a><p id="ccsm" class="mute" role="status"></p>`;
+ const g=el.querySelector(".gnr");if(g)g.insertAdjacentElement("afterbegin",c);else el.insertAdjacentElement("afterbegin",c);
+ const si=c.querySelector("#ccsi");if(si)si.onclick=async()=>{const m=c.querySelector("#ccsm");m.textContent="Signing in...";try{await S.signIn(c.querySelector("#ccse").value.trim(),c.querySelector("#ccsp").value);if(typeof route==="function")route();else location.reload()}catch(e){m.textContent="Not signed in: "+e.message;m.style.color="#b00020"}};
+ const so=c.querySelector("#ccso");if(so)so.onclick=()=>{S.signOut();if(typeof route==="function")route();else location.reload()}}catch(e){console.error("cc-fix",e)}};
+})();
+</script>
 </body>
 </html>
