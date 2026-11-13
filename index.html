@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.paypal.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; frame-src https:; img-src 'self' data: https:; connect-src 'self' https://archive.org https://*.supabase.co wss://*.supabase.co https://api.weather.gov https://api.emailjs.com https://www.theaudiodb.com https://www.googleapis.com https://www.omdbapi.com https://api.gdeltproject.org https://api.themoviedb.org https://en.wikipedia.org https://api.tvmaze.com https://www.youtube.com https://www.paypal.com https://*.paypal.com https://api.open-meteo.com https://geocoding-api.open-meteo.com https://boot.pluto.tv https://service-channels.clusters.pluto.tv https://api.piped.private.coffee https://pipedapi.kavin.rocks https://pipedapi.leptons.xyz https://pipedapi.nosebs.ru https://pipedapi.reallyaweso.me https://piped-api.lunar.icu; media-src 'self' https: blob:; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.paypal.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; frame-src https:; img-src 'self' data: https:; connect-src 'self' https://archive.org https://*.archive.org https://*.supabase.co wss://*.supabase.co https://api.weather.gov https://api.emailjs.com https://www.theaudiodb.com https://www.googleapis.com https://www.omdbapi.com https://api.gdeltproject.org https://api.themoviedb.org https://en.wikipedia.org https://api.tvmaze.com https://www.youtube.com https://www.paypal.com https://*.paypal.com https://api.open-meteo.com https://geocoding-api.open-meteo.com https://boot.pluto.tv https://service-channels.clusters.pluto.tv https://api.piped.private.coffee https://pipedapi.kavin.rocks https://pipedapi.leptons.xyz https://pipedapi.nosebs.ru https://pipedapi.reallyaweso.me https://piped-api.lunar.icu; media-src 'self' https: blob:; upgrade-insecure-requests">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>Good Morning Northstar News</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -928,7 +928,7 @@ function showEpisodesHTML(title){
   if(!g)return `<section class="show-episodes"><h2>Seasons &amp; Episodes</h2><p class="mute">Episodes for this show have not been added to the NorthStar library yet.</p></section>`;
   const seasons=[...g.S.keys()].sort((a,b)=>(a||99)-(b||99));
   const total=seasons.reduce((n,k)=>n+(g.S.get(k)||[]).length,0);
-  return `<section class="show-episodes"><div class="show-episodes-head"><div><h2>Seasons &amp; Episodes</h2><p class="mute">${seasons.filter(Boolean).length} season${seasons.filter(Boolean).length===1?"":"s"} · ${total} episode${total===1?"":"s"} in the NorthStar library</p></div></div>${seasons.map((sn,i)=>{const eps=g.S.get(sn)||[];return `<details class="show-season" ${i===0?"open":""}><summary><span>${sn?"Season "+sn:"Season not assigned"}</span><small>${eps.length} episode${eps.length===1?"":"s"}</small></summary><div class="show-episode-list">${eps.map(ep=>{const ready=!!(ep.yt&&ep.rights&&ep.rights!=="pending"&&ep.rights!=="blocked");return `<article class="show-episode"><div class="show-episode-num">${ep.ep?"E"+esc(ep.ep):"—"}</div><div class="show-episode-copy"><b>${esc(ep.title||"Untitled episode")}</b>${ep.syn?`<p>${esc(ep.syn)}</p>`:""}<small>${ep.dur>0?esc(ep.dur)+" min · ":""}${ready?"Available to play":"Not cleared for playback yet"}</small></div>${ready?`<a class="btn" href="#odwatch/${encodeURIComponent(ep.id)}">Play episode</a>`:`<span class="chip wait">Coming soon</span>`}</article>`}).join("")}</div></details>`}).join("")}</section>`;
+  return `<section class="show-episodes"><div class="show-episodes-head"><div><h2>Seasons &amp; Episodes</h2><p class="mute">${seasons.filter(Boolean).length} season${seasons.filter(Boolean).length===1?"":"s"} · ${total} episode${total===1?"":"s"} in the NorthStar library</p></div></div>${seasons.map((sn,i)=>{const eps=g.S.get(sn)||[];return `<details class="show-season" ${i===0?"open":""}><summary><span>${sn?"Season "+sn:"Season not assigned"}</span><small>${eps.length} episode${eps.length===1?"":"s"}</small></summary><div class="show-episode-list">${eps.map(ep=>{const ready=!!((ep.yt||(ep.ia&&ep.ia.approved&&ep.ia.url))&&ep.rights&&ep.rights!=="pending"&&ep.rights!=="blocked");return `<article class="show-episode"><div class="show-episode-num">${ep.ep?"E"+esc(ep.ep):"—"}</div><div class="show-episode-copy"><b>${esc(ep.title||"Untitled episode")}</b>${ep.syn?`<p>${esc(ep.syn)}</p>`:""}<small>${ep.dur>0?esc(ep.dur)+" min · ":""}${ready?"Available to play":"Not cleared for playback yet"}</small></div>${ready?`<a class="btn" href="#odwatch/${encodeURIComponent(ep.id)}">Play episode</a>`:`<span class="chip wait">Coming soon</span>`}</article>`}).join("")}</div></details>`}).join("")}</section>`;
  }catch(e){return ""}
 }
 function availLoad(el){el.querySelectorAll("[data-av]").forEach(b=>{const k=b.dataset.av,t=b.dataset.t,out=b.querySelector(".avb");
@@ -1467,7 +1467,7 @@ details{border-radius:10px}summary{padding:4px 0}summary:hover{color:#94700f}
 "use strict";
 (function(){
 const API="/api",AK=()=>sessionStorage.getItem("gmn_admin")||"";
-async function api(p,o){o=o||{};if(/^\/profiles/.test(p)&&window.NSPUB){try{const _r=await window.NSPUB.handle(p,o);if(_r!==undefined)return _r}catch(_e){}}const isF=o.body instanceof FormData;const h=Object.assign({},o.body&&!isF?{"Content-Type":"application/json"}:{},AK()?{"X-Admin-Key":AK()}:{},o.headers||{});
+async function api(p,o){o=o||{};if(/^\/profiles/.test(p)&&window.NSPUB){try{const _r=await window.NSPUB.handle(p,o);if(_r!==undefined)return _r}catch(_e){if(o&&o.method&&o.method!=="GET"&&!/no supabase|not signed in/i.test(String(_e&&_e.message)))throw _e}}const isF=o.body instanceof FormData;const h=Object.assign({},o.body&&!isF?{"Content-Type":"application/json"}:{},AK()?{"X-Admin-Key":AK()}:{},o.headers||{});
  const r=await fetch(API+p,Object.assign({},o,{headers:h}));const ct=r.headers.get("content-type")||"";const j=ct.includes("json")?await r.json():await r.text();if(!r.ok)throw new Error((j&&j.detail)||("Error "+r.status));return j}
 const P=(b,h)=>({method:"POST",body:JSON.stringify(b),headers:h});
 const linkify=t=>esc(t).replace(/(^|\s)(#[a-z][\w\/-]*)/g,'$1<a href="$2">$2</a>');
@@ -1647,13 +1647,13 @@ Object.assign(V,{
     btn.classList.add("rec");let n=10;$("#gidl").textContent=n;st.textContent="Listening...";r.start();const t=setInterval(()=>{n--;if(n<=0){clearInterval(t);r.stop()}else $("#gidl").textContent=n},1000)}catch(e){st.textContent="Microphone access was blocked. Allow it in your browser settings and try again."}};
   $("#gidf").onchange=e=>{const f=e.target.files[0];if(f)send(f,f.name)}},
  community(a,el){el.innerHTML=`${pageHero("Community","Meet readers and writers, follow them and like their pages.","#0b3b45")}<div class="gprof-grid" id="gcp" data-testid="community-profiles"><p class="mute">Loading members...</p></div><h2>From our Facebook</h2><div id="gcfb" data-testid="facebook-feed"></div>`;
-  api("/profiles").then(L=>{$("#gcp").innerHTML=L.map(p=>`<a class="gpc" href="#u/${esc(p.id)}" data-testid="community-profile-${esc(p.id)}"><div class="gpb"></div>${p.avatar?`<img class="gav" src="${esc(p.avatar)}" alt="">`:`<div class="av" style="width:64px;height:64px;font-size:28px;line-height:64px;margin:-32px 0 0 14px">${esc((p.name[0]||"?").toUpperCase())}</div>`}<div class="gpi"><b>${esc(p.name)}</b><div class="mute">${esc(p.tagline||"")}</div><div class="mute">${p.followers} followers</div></div></a>`).join("")||'<p class="mute">No public profiles yet. Save your profile in Account > Settings to appear here.</p>'}).catch(()=>{});fbInto($("#gcfb"),9)},
+  api("/profiles").then(L=>{$("#gcp").innerHTML=L.map(p=>`<a class="gpc" href="#u/${esc(p.id)}" data-testid="community-profile-${esc(p.id)}"><div class="gpb"></div>${p.avatar?`<img class="gav" src="${esc(p.avatar)}" alt="">`:`<div class="av" style="width:64px;height:64px;font-size:28px;line-height:64px;margin:-32px 0 0 14px">${esc((p.name[0]||"?").toUpperCase())}</div>`}<div class="gpi"><b>${esc(p.name)}</b><div class="mute">${esc(p.tagline||"")}</div><div class="mute">${p.followers} followers</div></div></a>`).join("")||'<p class="mute">No public profiles yet. Save your profile in Account > Settings to appear here.</p>'}).catch(()=>{});fbInto($("#gcfb"),9);if(window.nsCommunityLoad)window.nsCommunityLoad()},
  u(id,el){const me0=me();el.innerHTML='<p class="mute">Loading profile...</p>';api("/profiles/"+encodeURIComponent(id)+(me0?"?viewer="+me0.id:"")).then(p=>{
   el.innerHTML=`${p.banner?`<div class="gcover" style="aspect-ratio:${clampAR(p.banner_ar)}"><img src="${esc(p.banner)}" alt="" data-testid="public-profile-banner"></div>`:`<div class="cover" style="--c1:#0b3b45;--c2:#b38b1d"></div>`}<div class="phead" style="--acc:${esc(p.accent)}">${p.avatar?`<img class="gav" src="${esc(p.avatar)}" alt="">`:`<div class="av">${esc((p.name[0]||"?").toUpperCase())}</div>`}<div><h1 style="font:700 34px Newsreader,serif;margin:0" data-testid="public-profile-name">${esc(p.name)}</h1>${p.tagline?`<div class="gtagline">${esc(p.tagline)}</div>`:""}${p.show_badges&&p.badges.length?`<div class="gbadges" data-testid="public-profile-badges">${p.badges.map(b=>`<span class="tag">${esc(b)}</span>`).join("")}</div>`:""}<p class="mute">${esc(p.bio)||"No bio yet."}</p></div></div>
   <div class="stats"><div><b id="gfc">${p.followers}</b>Followers</div><div><b>${p.following}</b>Following</div><div><b id="glc">${p.likes}</b>Likes</div></div>
   ${me0&&me0.id===p.id?'<p><a class="btn alt" href="#profile/settings">Edit my profile</a></p>':`<div class="gsoc"><button class="btn" id="gfol" data-testid="follow-button">${p.viewer_follows?"Following":"Follow"}</button><button class="btn alt" id="glik" data-testid="like-button">${p.viewer_likes?"Liked":"Like"}</button></div>`}`;
   const act=k=>{const u=me();if(!u){pend={go:cur};say("Log in to "+k+".");go("login");return}(u.synced?Promise.resolve():sync(u)).then(()=>api(`/profiles/${encodeURIComponent(id)}/${k}`,P({from_id:u.id},{"X-Profile-Token":ptok(u)}))).then(r=>{$("#gfc").textContent=r.followers;$("#glc").textContent=r.likes;$("#gfol").textContent=r.viewer_follows?"Following":"Follow";$("#glik").textContent=r.viewer_likes?"Liked":"Like"}).catch(e=>say(e.message))};
-  const f=$("#gfol");if(f){f.onclick=()=>act("follow");$("#glik").onclick=()=>act("like")}}).catch(()=>{el.innerHTML='<p>Profile not found. <a href="#community">Back to Community</a></p>'})},
+  const f=$("#gfol");if(f){f.onclick=()=>act("follow");$("#glik").onclick=()=>act("like")}}).catch(()=>{el.innerHTML='<p>This profile could not be loaded (it may be private or your connection dropped). <a href="javascript:location.reload()">Try again</a> &middot; <a href="#community">Back to Community</a></p>'})},
  help(a,el){el.innerHTML=`${pageHero("Help Center","Answers about accounts, profiles, song ID, broadcasts and finding your way around.","#0b3b45")}<div class="row"><input id="ghq" placeholder="Search help, for example: forgot password" style="max-width:420px" data-testid="help-search-input"><button class="btn" id="gha" data-testid="help-ask-button">Ask the Help Desk</button></div><div id="ghl" data-testid="help-articles"></div>`;
   const CATS={account:"Accounts & profiles",site:"Using the site",troubleshooting:"Troubleshooting"};let all=[];const d=()=>{const q=$("#ghq").value.toLowerCase();$("#ghl").innerHTML=Object.keys(CATS).map(c=>{const L=all.filter(e=>e.cat===c&&(!q||(e.title+e.body).toLowerCase().includes(q)));return L.length?`<h2>${CATS[c]}</h2>${L.map(e=>`<details><summary>${esc(e.title)}</summary><p>${linkify(e.body)}</p></details>`).join("")}`:""}).join("")||'<p class="mute">No match. Ask the Help Desk.</p>'};
   api("/kb").then(L=>{all=L;d()}).catch(()=>{$("#ghl").innerHTML='<p class="mute">Help articles could not load.</p>'});$("#ghq").oninput=d;$("#gha").onclick=()=>openChat($("#ghq").value.trim()||"Hi")},
@@ -3224,22 +3224,34 @@ const NSP={active:null,mount};window.NSPlay=NSP;
 function mountNative(box,o){
  const vs=DB.get("ns_vol",{v:80,m:false});let muted=!GEST||vs.m,alive=true,ended=false,t0=Date.now(),lastP=0;
  const dvr=o.dvr&&!o.nodvr&&o.startMs;
- const ui=()=>`<div class="r"><b>${E(o.title)}</b><span class="mu">${E(o.sub||"")}</span>${dvr?'<span class="lb" data-badge>\u25CF LIVE</span><span class="mu" data-lag></span><button data-a="golive" hidden>Go Live</button>':""}</div><div class="r"><span data-e>0:00</span><div class="bar" data-bar role="slider" aria-label="Seek"><i data-p></i></div><span data-r>-0:00</span></div><div class="r"><button data-a="prev" ${o.prev?"":"disabled"}>&#9198; Prev</button><button data-a="b10">&minus;10s</button><button data-a="pp" style="min-width:76px">Play</button><button data-a="f10">+10s</button><button data-a="next" ${o.next?"":"disabled"}>Next &#9197;</button><button data-a="rs">Restart</button><button data-a="mute" aria-label="Mute"></button><input type="range" min="0" max="100" data-v aria-label="Volume"><button data-a="fs">Full screen</button></div>`;
+ const ui=()=>`<div class="r"><b>${E(o.title)}</b><span class="mu">${E(o.sub||"")}</span>${dvr?'<span class="lb" data-badge>\u25CF LIVE</span><span class="mu" data-lag></span><button data-a="golive" hidden>Go Live</button>':""}</div><div class="r"><span data-e>0:00</span><div class="bar" data-bar role="slider" aria-label="Seek"><i data-p></i></div><span data-r>-0:00</span></div><div class="r"><button data-a="prev" ${o.prev?"":"disabled"}>&#9198; Prev</button><button data-a="b10">&minus;10s</button><button data-a="pp" style="min-width:76px">Play</button><button data-a="f10">+10s</button><button data-a="next" ${o.next?"":"disabled"}>Next &#9197;</button><button data-a="rs">Restart</button><button data-a="mute" aria-label="Mute"></button><input type="range" min="0" max="100" data-v aria-label="Volume"><button data-a="cc" aria-pressed="false">CC</button><button data-a="fs">Full screen</button></div>`;
  box.innerHTML=`<div class="nsp vod${o.nodvr?" nodvr":""}"><div class="nsv"><video playsinline preload="auto" aria-label="${E(o.title)}"></video><div class="nss"></div><div class="nsl"><div><small>NORTHSTAR</small><br><b data-lt>Loading ${E(o.title)}&hellip;</b><br><button data-a="go" hidden style="margin-top:10px">Start playback</button></div></div></div><div class="nsc">${ui()}</div></div>`;
  const R=box.querySelector(".nsp"),v=R.querySelector("video"),q=s=>R.querySelector(s),S={t:0,d:0,s:-1,got:0,mu:muted};
  v.muted=muted;v.volume=Math.max(0,Math.min(1,vs.v/100));
  const pos0=()=>o.startMs?(Date.now()-o.startMs)/1e3:(o.start||0);
  const setMute=m=>{muted=m;v.muted=m;S.mu=m;DB.set("ns_vol",{v:vs.v,m});draw()},setVol=n=>{vs.v=n;v.volume=n/100;if(n>0&&muted){muted=false;v.muted=false;S.mu=false}DB.set("ns_vol",{v:n,m:muted});draw()};
  const play=()=>{const p=v.play();if(p&&p.catch)p.catch(()=>{const g=q('[data-a="go"]');if(g)g.hidden=false})};
+ /* Closed captions for Internet Archive files: look for a .vtt/.srt next to the video, convert SRT to WebVTT, attach as a text track */
+ let ccOn=false,ccState=0,ccTrack=null,ccSrc="";
+ const ccMsg=m=>{try{if(typeof say==="function")say(m)}catch(e){}};
+ const ccBtn=()=>{const b=q('[data-a="cc"]');if(b){b.setAttribute("aria-pressed",String(ccOn));b.style.opacity=ccOn?"1":".7";b.textContent=ccOn?"CC on":"CC"}};
+ const ccFind=async()=>{ccState=1;try{const m=String(o.src).match(/archive\.org\/download\/([^\/]+)\/(.+?)(?:\?.*)?$/);if(!m)throw 0;const id=m[1],vf=decodeURIComponent(m[2]),base=vf.replace(/\.[^.\/]+$/,"").toLowerCase();
+   const r=await fetch("https://archive.org/metadata/"+encodeURIComponent(id),{cache:"no-store"});if(!r.ok)throw 0;const j=await r.json(),F=(j.files||[]).filter(f=>/\.(vtt|srt)$/i.test(f.name||""));if(!F.length)throw 0;
+   const score=f=>{const n=f.name.toLowerCase();let x=0;if(n.replace(/\.(en|eng)?\.?(vtt|srt)$/,"")===base||n.startsWith(base))x+=4;if(/(^|[._-])(en|eng|english)([._-]|\.)/.test(n))x+=2;if(/\.vtt$/.test(n))x+=1;return x};
+   F.sort((a,b)=>score(b)-score(a));const f=F[0],u="https://archive.org/download/"+encodeURIComponent(id)+"/"+f.name.split("/").map(encodeURIComponent).join("/");
+   const t=await fetch(u);if(!t.ok)throw 0;let txt=await t.text();if(!/^\s*WEBVTT/.test(txt))txt="WEBVTT\n\n"+txt.replace(/\r/g,"").replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g,"$1.$2");
+   const url=URL.createObjectURL(new Blob([txt],{type:"text/vtt"})),tr=document.createElement("track");tr.kind="captions";tr.label="English";tr.srclang="en";tr.src=url;v.appendChild(tr);ccTrack=tr;ccSrc=url;ccState=2;return true}catch(e){ccState=3;return false}};
+ const ccApply=()=>{try{const L=v.textTracks;for(let i=0;i<L.length;i++)L[i].mode=ccOn?"showing":"disabled"}catch(e){}ccBtn()};
+ const ccToggle=async()=>{if(ccState===3){ccMsg("No captions are available for this title.");return}if(ccState===0||ccState===1){if(ccState===0){const ok=await ccFind();if(!ok){ccMsg("No captions are available for this title.");ccBtn();return}}else return}ccOn=!ccOn;ccApply();ccMsg("Captions "+(ccOn?"on":"off"))};
  const inst={live:false,nodvr:!!o.nodvr,S,
-  destroy(){alive=false;clearInterval(iv);try{v.pause();v.removeAttribute("src");v.load()}catch(e){}if(NSP.active===inst)NSP.active=null;box._nsp=null},
+  destroy(){alive=false;clearInterval(iv);try{if(ccSrc)URL.revokeObjectURL(ccSrc)}catch(e){}try{v.pause();v.removeAttribute("src");v.load()}catch(e){}if(NSP.active===inst)NSP.active=null;box._nsp=null},
   toggle(){if(o.nodvr)return;v.paused?play():v.pause()},
   seek(t){if(o.nodvr)return;t=Math.max(0,S.d?Math.min(t,S.d-0.5):t);S.t=t;try{v.currentTime=t}catch(e){}},
   skip(d){inst.seek(S.t+d)},restart(){inst.seek(0);play()},goLive(){if(o.startMs){inst.seek((Date.now()-o.startMs)/1e3);play()}},
-  mute(){setMute(!muted)},vol(d){setVol(Math.max(0,Math.min(100,vs.v+d)))},cc(){},
+  mute(){setMute(!muted)},vol(d){setVol(Math.max(0,Math.min(100,vs.v+d)))},cc(){ccToggle()},
   fs(){document.fullscreenElement?document.exitFullscreen():R.requestFullscreen&&R.requestFullscreen()},
   prev(){o.prev&&o.prev()},next(){o.next&&o.next()},
-  swap(n){if(!n||!n.src)return;if(n.src===o.src){o=n;return}o=n;S.t=0;S.d=0;S.s=-1;ended=false;t0=Date.now();q(".nsl").hidden=false;q("[data-lt]").textContent="Loading "+n.title+"...";v.src=n.src;play()}};
+  swap(n){if(!n||!n.src)return;if(n.src===o.src){o=n;return}o=n;ccState=0;ccTrack=null;try{v.querySelectorAll("track").forEach(x=>x.remove());if(ccSrc)URL.revokeObjectURL(ccSrc)}catch(e){}ccSrc="";ccBtn();S.t=0;S.d=0;S.s=-1;ended=false;t0=Date.now();q(".nsl").hidden=false;q("[data-lt]").textContent="Loading "+n.title+"...";v.src=n.src;play()}};
  v.onloadedmetadata=()=>{S.d=v.duration||0;const p=pos0();if(S.d&&p>=S.d-1){S.s=0;if(!ended){ended=true;o.onEnd&&o.onEnd(S.d)}return}if(p>1){try{v.currentTime=p}catch(e){}}S.got=Date.now()};
  v.ontimeupdate=()=>{S.t=v.currentTime;S.got=Date.now()};
  v.onplaying=()=>{S.s=1;q(".nsl").hidden=true};v.onpause=()=>{if(!v.ended)S.s=2};v.onwaiting=()=>{S.s=3};
@@ -3247,7 +3259,7 @@ function mountNative(box,o){
  v.onvolumechange=()=>{S.mu=v.muted};
  v.onerror=()=>{q("[data-lt]").textContent="This file can't be played right now. It may have been removed from Internet Archive.";q(".nsl").hidden=false;const g=q('[data-a="go"]');if(g)g.hidden=true;window.NSDIAGnote&&window.NSDIAGnote("archive media error: "+o.src)};
  v.src=o.src;
- const A={chup:()=>{},chdn:()=>{},mute:inst.mute,pp:inst.toggle,b10:()=>inst.skip(-10),f10:()=>inst.skip(10),rs:inst.restart,golive:inst.goLive,prev:inst.prev,next:inst.next,fs:inst.fs,go:()=>{play();if(!muted)v.muted=false}};
+ const A={chup:()=>{},chdn:()=>{},mute:inst.mute,pp:inst.toggle,b10:()=>inst.skip(-10),f10:()=>inst.skip(10),rs:inst.restart,golive:inst.goLive,prev:inst.prev,next:inst.next,cc:inst.cc,fs:inst.fs,go:()=>{play();if(!muted)v.muted=false}};
  R.addEventListener("click",e=>{const b=e.target.closest("button[data-a]");if(b&&A[b.dataset.a])A[b.dataset.a]();if(e.target.closest(".nss"))inst.toggle()});
  q("[data-v]").oninput=e=>setVol(+e.target.value);
  const bar=q("[data-bar]");if(bar){const at=e=>{const r=bar.getBoundingClientRect();inst.seek(Math.max(0,Math.min(1,(e.clientX-r.left)/r.width))*(S.d||o.dur||0))};let dn=false;bar.onpointerdown=e=>{dn=true;bar.setPointerCapture(e.pointerId);at(e)};bar.onpointermove=e=>{if(dn)at(e)};bar.onpointerup=()=>{dn=false}}
@@ -4678,18 +4690,18 @@ function itemHTML(it){const rs=it.rights,ok=rs.status==="review-eligible",kind=S
  ${(ok||ov)?`<div class="row"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="iaconf" ${S.confVal?"checked":""} style="width:auto;margin:0"> ${ov?"I have the right to broadcast this and take responsibility for it.":"I confirmed this item's license permits broadcast use."}</label><input id="iano" value="${E(S.rnVal||"")}" placeholder="Rights note (required: what you checked)" style="max-width:340px;margin:0">${ov?`<input id="iaov" value="${E(S.ovVal||"")}" placeholder="Why you are overriding (required)" style="max-width:340px;margin:0">`:""}<button class="btn" data-ia="queue">Send checked files to review queue</button></div>`:`<p class="mute">This item cannot be queued for approval. Keep it restricted, turn on Administrator override above, or reject it so it is not offered again.</p><button class="btn alt" data-ia="rejectitem">Record as rejected</button>`}
  <button class="btn alt" data-ia="closeitem">Close</button></div>`}
 function queueHTML(l){if(!l.length)return'<p class="mute">Nothing here.</p>';
- return l.map(x=>`<div class="card" style="margin:8px 0"><div class="row"><b>${E(x.title)}</b>${tag(x.status,x.status==="rejected"?"f":"n")}${tag(x.rightsStatus,x.rightsStatus==="review-eligible"?"n":"f")}${x.override&&x.override.on?tag("OVERRIDE","f"):""}<span class="mute">${x.files.length} file(s)</span></div>
+ return l.map(x=>`<div class="card" style="margin:8px 0"><div class="row"><b>${E(x.title)}</b>${tag(x.status,x.status==="rejected"?"f":"n")}${tag(x.rightsStatus,x.rightsStatus==="review-eligible"?"n":"f")}${x.override&&x.override.on?tag("OVERRIDE","f"):""}${x.agent?tag("Found by "+x.agent):""}<span class="mute">${x.files.length} file(s)</span></div>
  <small><a href="${E(safeUrl(x.sourceUrl))}" target="_blank" rel="noopener noreferrer">${E(x.sourceUrl)}</a>${x.licenseurl?" &middot; "+E(x.licenseurl):""}</small>
  <div class="mute"><small>${E(x.rightsWhy)}</small></div>${x.override&&x.override.on?`<div class="warn"><small>Override by ${E(x.override.by)} on ${new Date(x.override.at).toLocaleString()}: ${E(x.override.reason)}${x.override.bypassed&&x.override.bypassed.length?" (bypassed: "+E(x.override.bypassed.join("; "))+")":""}</small></div>`:""}
  ${x.files.map(f=>`<div><small>${E(f.file)} &middot; ${mins(f.seconds)}${f.season!=null?" &middot; S"+f.season+"E"+f.episode:""}</small></div>`).join("")}
- <details><summary class="mute">History (${x.history.length})</summary>${x.history.map(h=>`<div><small>${new Date(h.at).toLocaleString()} &middot; ${E(h.action)}${h.note?": "+E(h.note):""}</small></div>`).join("")}</details>
+ <details><summary class="mute">History (${x.history.length})</summary>${x.history.map(h=>`<div><small>${new Date(h.at).toLocaleString()} &middot; ${E(h.by||"")} ${E(h.action)}${h.note?": "+E(h.note):""}</small></div>`).join("")}</details>
  <div class="row">${x.status==="pending"?`<button class="btn" data-ia="approve" data-v="${E(x.id)}">Approve</button><button class="btn alt" data-ia="reject" data-v="${E(x.id)}">Reject</button>`:`<button class="btn alt" data-ia="reopen" data-v="${E(x.id)}">Move back to review</button>`}<button class="btn alt" data-ia="drop" data-v="${E(x.id)}">Remove</button></div></div>`).join("")}
 async function doSearch(q){S.q=q;S.err="";S.msg="";if(!q.trim()){S.err="Type a search or paste a link first.";return paint()}
  const lk=/^https?:\/\/(?:www\.)?archive\.org\/(?:details|embed|download)\/([A-Za-z0-9._-]+)/i.exec(q.trim());if(lk)return doInspect(lk[1]);
  S.busy="Searching Internet Archive...";paint();try{S.results=await A.search(q.trim(),S.kind);S.msg=S.results.length+" result(s). Results are not rights-checked until you inspect an item."}catch(e){S.err=e.message;S.results=null}S.busy="";paint()}
 async function doInspect(id){S.err="";S.msg="";S.busy="Inspecting "+id+"...";paint();try{S.item=await A.inspect(id);S.itemKind=S.kind;S.runs.sel=null;S.ov=false;S.rnVal="";S.ovVal="";S.confVal=false}catch(e){S.err=e.message}S.busy="";paint()}
 function snap(){const h=S.host;if(!h)return;const sel={};h.querySelectorAll("[data-ia-f]").forEach(c=>{if(!c.disabled)sel[c.dataset.iaF]=c.checked});S.runs.sel=sel;const g=s=>h.querySelector(s);if(g("#iano"))S.rnVal=g("#iano").value;if(g("#iaov"))S.ovVal=g("#iaov").value;if(g("#iaconf"))S.confVal=g("#iaconf").checked}
-function note(x,action,n){x.history.push({at:Date.now(),action,note:n||""})}
+function note(x,action,n){const by=(window.NSSB&&NSSB.who&&NSSB.who())||"administrator";x.history.push({at:Date.now(),by,action,note:n||""});if(window.NSAgentAudit&&/approved|rejected|OVERRIDE|moved back/.test(action))window.NSAgentAudit({at:Date.now(),admin:by,agent:x.agent||"",item:x.id,decision:action,reason:n||""})}
 function bind(h){h.onclick=e=>{const b=e.target.closest("[data-ia]");if(!b)return;const a=b.dataset.ia,v=b.dataset.v,q=Q(),x=q.find(y=>y.id===v);
  if(a==="search"){S.kind=h.querySelector("#iak").value;doSearch(h.querySelector("#iaq").value)}
  else if(a==="coll"){S.kind=h.querySelector("#iak").value;doSearch("collection:"+v)}
@@ -4725,6 +4737,73 @@ setInterval(()=>{if(S.root&&S.root.isConnected&&!document.hidden)syncNow(false)}
 addEventListener("focus",()=>{if(S.root&&S.root.isConnected)syncNow(false)});
 window.NSIAResearch={queue:Q,state:S,paint,sync:{pull:pullQ,save:saveQ,st:SBQ,unpub}};
 try{const old=X.ccDraw();X.setDraw(function(sec){old(sec);if(X.tab()!=="research")return;const body=sec.querySelector("#rjroot");if(!body)return;let h=body.querySelector("#iaroot");if(!h){h=document.createElement("div");h.id="iaroot";body.appendChild(h)}S.root=body;S.host=h;paint();if(!SBQ.started){SBQ.started=1;syncNow(false)}});if(/^#(admin|tvadmin)/.test(location.hash)&&typeof route==="function")route()}catch(e){console.warn("IA research panel",e)}
+})();
+</script>
+<script id="ns-agents">
+/* NorthStar research agents. Agents only DISCOVER and queue items as "pending". They cannot approve, reject or override.
+   Only an administrator decision (with confirmation, reason and audit record) changes status. Runs while an admin page is open. */
+(function(){"use strict";const X=window.NSX,A=window.NSIA,R=window.NSIAResearch;if(!X||!A||!R)return;
+const E=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const AG=[
+{n:"Diane Keaton",focus:"Classic TV series and episodes",kind:"tv",topics:["collection:classic_tv","collection:television","classic sitcom","classic detective series"]},
+{n:"Catherine O'Hara",focus:"Feature films and cartoons",kind:"tv",topics:["collection:feature_films","collection:classic_cartoons","public domain feature film","silent comedy"]},
+{n:"Robin Williams",focus:"Shorts, variety, kids and rare programming",kind:"tv",topics:["collection:prelinger","collection:ephemera","variety show","educational television"]}];
+const who=()=>(window.NSSB&&NSSB.who&&NSSB.who())||"administrator";
+const K="ag_state",LOG="ag_audit",YK="ag_yt";
+const st=()=>{const s=X.D.get(K,{});return s&&typeof s==="object"&&!Array.isArray(s)?s:{}},sv=s=>X.D.set(K,s);
+const arr=k=>{const a=X.D.get(k,[]);return Array.isArray(a)?a:[]};
+const norm=t=>String(t||"").toLowerCase().replace(/[^a-z0-9]+/g,"");
+const yid=v=>{const m=String(v||"").match(/(?:v=|youtu\.be\/|embed\/|live\/)([\w-]{11})|^([\w-]{11})$/);return m?(m[1]||m[2]):""};
+async function audit(r){const a=arr(LOG);a.unshift(r);X.D.set(LOG,a.slice(0,500));
+ try{const s=window.NSSB;if(s&&s.cfg().ok&&s.jwt())await s.req("/rest/v1/ns_agent_audit",{method:"POST",auth:1,headers:{Prefer:"return=minimal"},body:[{admin:r.admin,agent:r.agent||"",item_id:r.item,decision:r.decision,reason:r.reason||"",data:r}]})}catch(e){}}
+window.NSAgentAudit=audit;
+const busy={},msg={};let host=null,root=null;
+const fl=f=>({file:f.file,url:f.url,format:f.format,seconds:f.seconds,season:f.season,episode:f.episode});
+async function run(ag){if(busy[ag.n])return;busy[ag.n]=1;msg[ag.n]="Searching Internet Archive...";paint();
+ let added=0,dup=0,skip=0;
+ try{const q0=R.queue(),have=new Set(q0.map(x=>x.id)),titles=new Set(q0.map(x=>norm(x.title))),s=st(),m=s[ag.n]=s[ag.n]||{seen:[],cur:0},seen=new Set(m.seen||[]);
+  const T=ag.topics.slice(m.cur%ag.topics.length).concat(ag.topics.slice(0,m.cur%ag.topics.length));m.cur=(m.cur||0)+1;
+  const cand=[];for(const t of T){if(cand.length>=12)break;let r=[];try{r=await A.search(t,ag.kind)}catch(e){continue}
+   for(const x of r){const id="ia:"+x.id;if(cand.length>=12)break;if(have.has(id)||seen.has(x.id)||cand.some(c=>c.id===x.id))continue;cand.push(x)}}
+  const out=[];let i=0;
+  await Promise.all([0,1,2].map(async()=>{while(i<cand.length){const c=cand[i++];seen.add(c.id);let it;try{it=await A.inspect(c.id)}catch(e){skip++;continue}
+   if(!it||!it.available||it.rights.status!=="review-eligible"){skip++;continue}
+   const tk=norm(it.title);if(titles.has(tk)){dup++;continue}
+   const files=it.files.filter(f=>f.url&&A.validate(f,ag.kind,it).ok).slice(0,12);if(!files.length){skip++;continue}
+   titles.add(tk);const now=Date.now();
+   out.push({id:"ia:"+it.id,source:"internet-archive",agent:ag.n,title:it.title,creator:it.creator,sourceUrl:it.url,artwork:it.artwork,licenseurl:it.licenseurl,collections:it.collections,rightsStatus:it.rights.status,rightsWhy:it.rights.why,rightsNote:"Collected by research agent "+ag.n+". Rights as reported by Internet Archive: "+it.rights.why+" An administrator must verify before this airs.",kind:ag.kind,files:files.map(fl),status:"pending",agentRec:{by:ag.n,rec:"eligible for review",at:now},history:[{at:now,by:ag.n,action:"discovered by agent",note:"Advisory only. Agents cannot approve or override."}]})}}));
+  if(out.length){const q=R.queue().slice();out.forEach(r=>{if(!q.some(y=>y.id===r.id)){q.unshift(r);added++}});R.sync.save(q)}
+  m.seen=[...seen].slice(-2000);m.last=Date.now();m.res={added,dup,skip};sv(s);
+  msg[ag.n]="Done: "+added+" new item(s) sent to the review queue, "+dup+" duplicate(s), "+skip+" skipped (restricted, unavailable or too short)."}
+ catch(e){msg[ag.n]="Stopped: "+e.message}
+ busy[ag.n]=0;paint();if(window.NSIAResearch)window.NSIAResearch.paint()}
+function html(){const s=st(),yt=arr(YK),pend=yt.filter(y=>y.status==="pending"),log=arr(LOG).slice(0,12);
+ return `<hr><h2 style="font:700 28px Newsreader,serif">Research agents</h2>
+ <p class="mute" style="max-width:75ch">Three agents search Internet Archive for programming that is open-licensed or in a known open collection, check runtimes, remove duplicates and send what they find to the rights-review queue above. <b>Agents only recommend. Only an administrator can approve, reject or override.</b> They run while this Admin page is open.</p>
+ <div class="grid">${AG.map(a=>{const m=s[a.n]||{};return `<div class="card"><b>${E(a.n)}</b><div class="mute">${E(a.focus)}</div><div class="mute"><small>${m.last?"Last run "+new Date(m.last).toLocaleString():"Never run"}</small></div>
+ <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" data-agauto="${E(a.n)}" ${m.auto?"checked":""} style="width:auto;margin:0"> Run automatically every 30 min</label>
+ <button class="btn" data-ag="${E(a.n)}" ${busy[a.n]?"disabled":""}>Run now</button><div class="mute"><small>${E(msg[a.n]||"")}</small></div></div>`}).join("")}</div>
+ <h3>Submit a YouTube video for administrator review</h3>
+ <p class="mute" style="max-width:75ch">Public YouTube videos are not cleared to rebroadcast just because they are public. Submit only official or licensed uploads and say what permission you checked.</p>
+ <div class="row"><input id="agyu" placeholder="YouTube link" style="max-width:260px;margin:0"><input id="agyt" placeholder="Title" style="max-width:220px;margin:0"><input id="agym" type="number" min="1" placeholder="Runtime (min)" style="max-width:130px;margin:0"><input id="agyc" placeholder="Channel / license or permission" style="max-width:260px;margin:0"><button class="btn" data-ag="yt">Submit for review</button></div>
+ ${pend.map(y=>`<div class="card" style="margin:8px 0"><b>${E(y.title)}</b> <span class="tag f">YouTube &middot; rights unverified</span><div><small>${E(y.dur)} min &middot; ${E(y.note)} &middot; <a href="https://www.youtube.com/watch?v=${E(y.vid)}" target="_blank" rel="noopener noreferrer">open video</a></small></div><div class="row"><button class="btn" data-agok="${E(y.id)}">Approve</button><button class="btn alt" data-agno="${E(y.id)}">Reject</button></div></div>`).join("")}
+ <h3>Administrator decisions (audit)</h3>${log.length?log.map(l=>`<div><small>${new Date(l.at).toLocaleString()} &middot; ${E(l.admin)} &middot; ${E(l.decision)} &middot; ${E(l.item)}${l.agent?" &middot; found by "+E(l.agent):""}${l.reason?" &middot; "+E(l.reason):""}</small></div>`).join(""):'<p class="mute">No decisions yet.</p>'}`}
+function bind(){host.onclick=e=>{const b=e.target.closest("[data-ag],[data-agok],[data-agno]");if(!b)return;const g=s=>host.querySelector(s);
+ if(b.dataset.ag==="yt"){const vid=yid(g("#agyu").value),title=g("#agyt").value.trim(),dur=+g("#agym").value,note=g("#agyc").value.trim();
+  if(!vid)return say("Paste a valid YouTube link.");if(!title||!(dur>0)||!note)return say("Title, runtime and the permission you checked are all required.");
+  const y=arr(YK);if(y.some(z=>z.vid===vid))return say("That video is already submitted.");y.unshift({id:"yt-"+vid,vid,title,dur,note,status:"pending",at:Date.now()});X.D.set(YK,y);paint();return}
+ if(b.dataset.ag){const a=AG.find(x=>x.n===b.dataset.ag);if(a)run(a);return}
+ const id=b.dataset.agok||b.dataset.agno,y=arr(YK),it=y.find(z=>z.id===id);if(!it)return;
+ if(b.dataset.agok){const why=(prompt("Reason for approving (required). You are confirming NorthStar may broadcast this video:","")||"").trim();if(!why)return say("A reason is required.");
+  if(!confirm("Approve and add \""+it.title+"\" to the Content Library?"))return;
+  const L=X.lib().slice();if(!L.some(i=>i.id===it.id))L.push({id:it.id,type:"movie",title:it.title.slice(0,140),dur:it.dur,yt:it.vid,rights:"licensed",rnote:it.note+" | Admin approval: "+why,src:"agent-yt",okreal:1,tags:"",syn:"",chs:[],imp:1});X.saveLib(L);
+  it.status="approved";X.D.set(YK,y.filter(z=>z.status==="pending"));audit({at:Date.now(),admin:who(),item:it.id,decision:"approved",reason:why})}
+ else{const why=(prompt("Reason for rejecting:","")||"").trim();X.D.set(YK,y.filter(z=>z.id!==id));audit({at:Date.now(),admin:who(),item:it.id,decision:"rejected",reason:why})}
+ paint()};
+ host.onchange=e=>{const c=e.target.closest("[data-agauto]");if(!c)return;const s=st(),n=c.dataset.agauto;s[n]=s[n]||{};s[n].auto=c.checked;sv(s)}}
+function paint(){if(!host||!host.isConnected)return;host.innerHTML=html();bind()}
+setInterval(()=>{if(!host||!host.isConnected||document.hidden)return;const s=st();AG.forEach(a=>{const m=s[a.n]||{};if(m.auto&&Date.now()-(m.last||0)>30*60*1000)run(a)})},60000);
+try{const old=X.ccDraw();X.setDraw(function(sec){old(sec);if(X.tab()!=="research")return;const body=sec.querySelector("#rjroot");if(!body)return;let h=body.querySelector("#agroot");if(!h){h=document.createElement("div");h.id="agroot";body.appendChild(h)}root=body;host=h;paint()});if(/^#(admin|tvadmin)/.test(location.hash)&&typeof route==="function")route()}catch(e){console.warn("agents panel",e)}
 })();
 </script>
 <script id="ns-public-profiles">
@@ -4926,6 +5005,131 @@ BC.channelAudit=()=>{const now=Date.now(),res=[],sig={};X.vch().forEach(c=>{let 
 BC.report=()=>({version:BC.ver,skew_ms:BC.skew,rtt_ms:BC.rtt||null,now_playing:BC.npState,rows:Object.keys(BC.np).length,bad_items:Object.keys(BC.bad).length,recent:BC.log.slice(-15)});
 })();
 
+</script>
+<style id="ns-repair-css">
+/* NorthStar mobile/profile/community repair */
+html,body{max-width:100%;overflow-x:hidden}
+img,video,iframe,canvas{max-width:100%}
+.gcover{max-width:100%;overflow:hidden}.gcover img{width:100%;height:100%;object-fit:cover;display:block}
+.gav{object-fit:cover;flex:none}
+.phead{flex-wrap:wrap;gap:14px}.phead>div{min-width:0}
+h1,h2,h3,.gpi b,.gtagline,.mute{overflow-wrap:anywhere}
+.stats{flex-wrap:wrap}
+.gsoc{display:flex;flex-wrap:wrap;gap:8px}
+.card table,.ccbody table{display:block;overflow-x:auto;max-width:100%}
+.gprof-grid{grid-template-columns:repeat(auto-fill,minmax(min(260px,100%),1fr))}
+.gpc{min-width:0}
+@media(max-width:700px){
+input,select,textarea{font-size:16px!important;max-width:100%}
+.gsoc .btn,.card .btn,#gsave,#gfol,#glik{min-height:44px}
+.gsoc .btn{flex:1 1 140px}
+.phead h1{font-size:26px!important}
+.gprof-grid{grid-template-columns:1fr}
+.vid,.vid iframe{width:100%}
+#win .wp iframe{width:100%}
+}
+</style><script id="ns-repair">
+(function(){"use strict";
+const $=s=>document.querySelector(s),E=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const card=p=>`<a class="gpc" href="#u/${E(p.id)}" data-testid="community-profile-${E(p.id)}"><div class="gpb"></div>${p.avatar?`<img class="gav" src="${E(p.avatar)}" alt="">`:`<div class="av" style="width:64px;height:64px;font-size:28px;line-height:64px;margin:-32px 0 0 14px">${E((p.name[0]||"?").toUpperCase())}</div>`}<div class="gpi"><b>${E(p.name)}</b><div class="mute">${E(p.tagline||"")}</div><div class="mute" data-fc="${E(p.id)}">${p.followers||0} followers</div></div></a>`;
+let busy=0;
+async function load(quiet){const g=$("#gcp");if(!g||busy)return;busy=1;
+ try{const L=await api("/profiles");if(!Array.isArray(L))throw new Error("bad response");
+  g.innerHTML=L.map(card).join("")||'<p class="mute">No public profiles yet. Save your profile in Account &gt; Settings to appear here.</p>';
+  /* real follower counts (list endpoint returns 0), 6 at a time, first 60 */
+  const q=L.filter(p=>window.NSPUB&&window.NSPUB.UUID.test(p.id)).slice(0,60);
+  for(let i=0;i<q.length;i+=6)await Promise.all(q.slice(i,i+6).map(p=>api("/profiles/"+encodeURIComponent(p.id)).then(r=>{const e=document.querySelector('[data-fc="'+p.id+'"]');if(e&&r&&r.followers!=null)e.textContent=r.followers+" followers"}).catch(()=>{})));
+ }catch(e){if(!quiet)g.innerHTML='<p class="mute">Members could not be loaded ('+E(e.message||"network error")+'). <button class="btn alt" id="gcretry" type="button">Try again</button></p>',(()=>{const b=$("#gcretry");if(b)b.onclick=()=>{g.innerHTML='<p class="mute">Loading members...</p>';load()}})()}
+ busy=0}
+window.nsCommunityLoad=load;
+/* new/changed profiles appear without a manual refresh */
+setInterval(()=>{if(!document.hidden&&/^#community/.test(location.hash))load(true)},20000);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&/^#community/.test(location.hash))load(true)});
+/* public profile: refresh counts while open */
+setInterval(()=>{if(document.hidden||!/^#u\//.test(location.hash)||!$("#gfc"))return;const id=decodeURIComponent(location.hash.slice(3));api("/profiles/"+encodeURIComponent(id)).then(r=>{if(r&&r.followers!=null&&$("#gfc")){$("#gfc").textContent=r.followers;$("#glc").textContent=r.likes}}).catch(()=>{})},20000);
+if($("#gcp"))load();
+})();
+</script><style id="ns-feed-css">
+#gfeed{margin:0 0 28px}
+#gfeed .fcomp{display:grid;gap:8px;margin:12px 0 18px}
+#gfeed textarea{width:100%;min-height:84px;resize:vertical;box-sizing:border-box}
+#gfeed .fpost{border:1px solid rgba(128,128,128,.3);border-radius:12px;padding:14px;margin:0 0 12px;background:rgba(128,128,128,.06)}
+#gfeed .fhead{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+#gfeed .fav{width:38px;height:38px;border-radius:50%;object-fit:cover;flex:none;background:#0b3b45;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:700}
+#gfeed .fbody{margin:10px 0;white-space:pre-wrap;overflow-wrap:anywhere}
+#gfeed .fbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+#gfeed .fbar .btn{padding:4px 12px;min-height:36px}
+#gfeed .fon{outline:2px solid #b38b1d}
+#gfeed .fcm{margin:10px 0 0 14px;padding-left:12px;border-left:2px solid rgba(128,128,128,.3)}
+#gfeed .fcm .fcm{margin-left:8px}
+#gfeed .fc1{margin:8px 0}
+#gfeed .ferr{color:#b3261e;font-size:14px;margin:6px 0}
+@media(max-width:700px){#gfeed .fbar .btn{min-height:44px}#gfeed .fcm{margin-left:6px;padding-left:8px}}
+</style>
+<script id="ns-community-feed">
+/* Community feed: posts, comments, replies and reactions on Supabase (run northstar_community.sql first).
+   Reads are public; writing needs a signed-in member. Errors are shown, never swallowed. */
+(function(){"use strict";
+if(window.NSFEED)return;
+const $=s=>document.querySelector(s),E=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const cfg=()=>{try{const c=window.NSSB&&window.NSSB.cfg();return c&&c.ok?c:null}catch(e){return null}};
+const tok=async()=>{try{return window.NSAUTH?await window.NSAUTH.tok():""}catch(e){return""}};
+const uidOf=t=>{try{return JSON.parse(atob(t.split(".")[1].replace(/-/g,"+").replace(/_/g,"/"))).sub||""}catch(e){return""}};
+async function rest(path,o){const c=cfg();if(!c)throw new Error("Community is not connected yet.");o=o||{};const t=await tok();if(o.auth&&!t)throw new Error("Log in to do that.");
+ const r=await fetch(c.url+path,{method:o.method||"GET",headers:Object.assign({apikey:c.anon,Authorization:"Bearer "+(t||c.anon)},o.body?{"Content-Type":"application/json"}:{},o.prefer?{Prefer:o.prefer}:{}),body:o.body?JSON.stringify(o.body):undefined,cache:"no-store"});
+ const txt=await r.text();let j=null;try{j=txt?JSON.parse(txt):null}catch(e){}
+ if(!r.ok){const m=(j&&(j.message||j.hint))||("HTTP "+r.status);throw new Error(/relation .* does not exist|Could not find the (table|function)|PGRST20[0-9]/i.test(m)||r.status===404?"The Community tables are not set up yet (an administrator needs to run northstar_community.sql in Supabase).":m)}
+ return j}
+const S={posts:[],mine:{},open:{},comments:{},cmine:{},me:"",admin:null,err:"",busy:0,loaded:0};
+const ago=t=>{const s=Math.max(0,(Date.now()-Date.parse(t))/1000);return s<60?"just now":s<3600?Math.floor(s/60)+" min ago":s<86400?Math.floor(s/3600)+" h ago":new Date(t).toLocaleDateString()};
+const av=(n,a)=>a?`<img class="fav" src="${E(a)}" alt="">`:`<span class="fav">${E((n||"?")[0].toUpperCase())}</span>`;
+const KINDS=[["like","\uD83D\uDC4D"],["love","\u2764\uFE0F"],["laugh","\uD83D\uDE02"]];
+function react(type,id,counts,mine){return KINDS.map(([k,i])=>`<button class="btn alt ${mine&&mine[type+id+k]?"fon":""}" type="button" data-fr="${type}|${id}|${k}" aria-pressed="${!!(mine&&mine[type+id+k])}" aria-label="${k}">${i} ${counts[k]||0}</button>`).join("")}
+function cmHTML(pid,parent){const L=(S.comments[pid]||[]).filter(c=>(c.parent_id||null)===parent);
+ return L.map(c=>`<div class="fc1" data-c="${E(c.id)}"><div class="fhead">${av(c.author_name,c.author_avatar)}<a href="#u/${E(c.user_id)}"><b>${E(c.author_name)}</b></a><span class="mute">${ago(c.created_at)}</span></div><div class="fbody">${E(c.body)}</div><div class="fbar">${react("comment",c.id,{like:c.like_count},S.cmine)}<button class="btn alt" type="button" data-frep="${E(pid)}|${E(c.id)}">Reply</button>${(c.user_id===S.me||S.admin)?`<button class="btn alt" type="button" data-fdelc="${E(c.id)}|${E(pid)}">Delete</button>`:""}</div><div data-frbox="${E(c.id)}"></div><div class="fcm">${cmHTML(pid,c.id)}</div></div>`).join("")}
+function postHTML(p){const o=S.open[p.id];return `<article class="fpost" data-p="${E(p.id)}"><div class="fhead">${av(p.author_name,p.author_avatar)}<a href="#u/${E(p.user_id)}"><b>${E(p.author_name)}</b></a><span class="mute">${ago(p.created_at)}</span></div><div class="fbody">${E(p.body)}</div><div class="fbar">${react("post",p.id,{like:p.like_count,love:p.love_count,laugh:p.laugh_count},S.mine)}<button class="btn alt" type="button" data-fcm="${E(p.id)}">${p.comment_count} comment${p.comment_count===1?"":"s"}</button>${(p.user_id===S.me||S.admin)?`<button class="btn alt" type="button" data-fdel="${E(p.id)}">Delete</button>`:""}</div>${o?`<div class="fcm">${cmHTML(p.id,null)||'<p class="mute">No comments yet.</p>'}${S.me?`<div class="fcomp"><textarea maxlength="1000" placeholder="Write a comment" data-fcin="${E(p.id)}" aria-label="Write a comment"></textarea><div><button class="btn" type="button" data-fcsend="${E(p.id)}">Comment</button></div></div>`:'<p class="mute"><a href="#login">Log in</a> to comment.</p>'}</div>`:""}</article>`}
+function paint(){const h=$("#gfeed");if(!h||h.__typing)return;const keep=h.querySelector("#gfpost"),txt=keep?keep.value:"";
+ const act=document.activeElement;if(act&&act.tagName==="TEXTAREA"&&h.contains(act)&&act.value)return; /* never wipe what someone is typing */
+ h.innerHTML=`<h2>Community feed</h2>${S.me?`<div class="fcomp"><textarea id="gfpost" maxlength="2000" placeholder="Share something with the community" aria-label="New post"></textarea><div><button class="btn" id="gfsend" type="button">Post</button></div></div>`:'<p class="mute"><a href="#login">Log in</a> to post, comment and react.</p>'}<div class="ferr" id="gferr" role="alert">${E(S.err)}</div><div id="gflist">${S.posts.map(postHTML).join("")||(S.loaded?'<p class="mute">No posts yet. Be the first to post.</p>':'<p class="mute">Loading the feed...</p>')}</div>${S.err&&!S.loaded?'<button class="btn alt" id="gfretry" type="button">Try again</button>':""}`;
+ const n=$("#gfpost");if(n&&txt)n.value=txt}
+async function loadMine(){if(!S.me){S.mine={};S.cmine={};return}
+ try{const R=await rest("/rest/v1/ns_reactions?select=target_type,target_id,kind&user_id=eq."+S.me+"&limit=2000",{auth:1});S.mine={};S.cmine={};(R||[]).forEach(r=>{(r.target_type==="post"?S.mine:S.cmine)[r.target_type+r.target_id+r.kind]=1})}catch(e){}}
+async function loadComments(pid){S.comments[pid]=await rest("/rest/v1/ns_community_comments?select=*&post_id=eq."+encodeURIComponent(pid)+"&order=created_at.asc&limit=500")}
+async function load(quiet){if(S.busy||!$("#gfeed"))return;S.busy=1;
+ try{const t=await tok();S.me=t?uidOf(t):"";
+  if(S.me&&S.admin===null){S.admin=false;rest("/rest/v1/rpc/ns_is_admin",{method:"POST",auth:1,body:{}}).then(v=>{S.admin=v===true;paint()}).catch(()=>{})}
+  if(!S.me)S.admin=null;
+  const P=await rest("/rest/v1/ns_community_posts?select=*&order=created_at.desc&limit=50");if(!Array.isArray(P))throw new Error("The feed returned an unexpected answer.");
+  S.posts=P;S.err="";S.loaded=1;await loadMine();
+  for(const pid of Object.keys(S.open)){if(S.open[pid]&&P.some(p=>p.id===pid))try{await loadComments(pid)}catch(e){}}
+ }catch(e){if(!quiet||!S.loaded)S.err="The feed could not be loaded: "+(e.message||"network error")}
+ S.busy=0;paint()}
+async function act(fn,fail){try{await fn();S.err=""}catch(e){S.err=(fail||"That did not work")+": "+(e.message||"network error");}paint()}
+document.addEventListener("click",e=>{const b=e.target.closest("#gfeed button");if(!b)return;const d=b.dataset;
+ if(b.id==="gfretry"){S.err="";load();return}
+ if(b.id==="gfsend"){const v=($("#gfpost").value||"").trim();if(!v){S.err="Write something first.";return paint()}b.disabled=true;
+  act(async()=>{await rest("/rest/v1/ns_posts",{method:"POST",auth:1,body:{body:v},prefer:"return=minimal"});$("#gfpost").value="";await load(true)},"Your post was not saved");return}
+ if(d.fcm){S.open[d.fcm]=!S.open[d.fcm];if(S.open[d.fcm])act(()=>loadComments(d.fcm),"Comments could not load");else paint();return}
+ if(d.fcsend){const ta=document.querySelector('[data-fcin="'+d.fcsend+'"]'),v=(ta&&ta.value||"").trim();if(!v){S.err="Write a comment first.";return paint()}
+  act(async()=>{await rest("/rest/v1/ns_comments",{method:"POST",auth:1,body:{post_id:d.fcsend,body:v},prefer:"return=minimal"});ta.value="";await loadComments(d.fcsend);await load(true)},"Your comment was not saved");return}
+ if(d.frep){const[pid,cid]=d.frep.split("|"),box=document.querySelector('[data-frbox="'+cid+'"]');if(!S.me){S.err="Log in to reply.";return paint()}
+  if(box.firstChild){box.innerHTML="";return}
+  box.innerHTML=`<div class="fcomp"><textarea maxlength="1000" placeholder="Write a reply" aria-label="Write a reply"></textarea><div><button class="btn" type="button" data-frsend="${E(pid)}|${E(cid)}">Reply</button></div></div>`;box.querySelector("textarea").focus();return}
+ if(d.frsend){const[pid,cid]=d.frsend.split("|"),ta=b.closest(".fcomp").querySelector("textarea"),v=(ta.value||"").trim();if(!v){S.err="Write a reply first.";return paint()}
+  act(async()=>{await rest("/rest/v1/ns_comments",{method:"POST",auth:1,body:{post_id:pid,parent_id:cid,body:v},prefer:"return=minimal"});await loadComments(pid);await load(true)},"Your reply was not saved");return}
+ if(d.fr){const[type,id,kind]=d.fr.split("|");if(!S.me){S.err="Log in to react.";return paint()}
+  act(async()=>{await rest("/rest/v1/rpc/ns_toggle_reaction",{method:"POST",auth:1,body:{p_type:type,p_id:id,p_kind:kind}});await load(true)},"Reaction failed");return}
+ if(d.fdel){if(!confirm("Delete this post and its comments?"))return;act(async()=>{await rest("/rest/v1/ns_posts?id=eq."+encodeURIComponent(d.fdel),{method:"DELETE",auth:1,prefer:"return=minimal"});await load(true)},"Delete failed");return}
+ if(d.fdelc){const[cid,pid]=d.fdelc.split("|");if(!confirm("Delete this comment and its replies?"))return;act(async()=>{await rest("/rest/v1/ns_comments?id=eq."+encodeURIComponent(cid),{method:"DELETE",auth:1,prefer:"return=minimal"});await loadComments(pid);await load(true)},"Delete failed")}
+});
+function mount(){const g=$("#gcp");if(!g||$("#gfeed"))return;g.insertAdjacentHTML("beforebegin",'<section id="gfeed" data-testid="community-feed" aria-label="Community feed"></section>');const h=g.previousElementSibling;g.insertAdjacentHTML("beforebegin","<h2>Members</h2>");S.loaded=S.loaded;paint();load()}
+new MutationObserver(()=>{if($("#gcp")&&!$("#gfeed"))mount()}).observe(document.body,{childList:true,subtree:true});
+window.addEventListener("hashchange",()=>{setTimeout(mount,0)});
+setInterval(()=>{if(!document.hidden&&$("#gfeed"))load(true)},20000);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&$("#gfeed"))load(true)});
+window.NSFEED={load,state:S};
+mount();
+})();
 </script>
 </body>
 </html>
