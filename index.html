@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.paypal.com https://accounts.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com; font-src https://fonts.gstatic.com; frame-src https:; img-src 'self' data: https:; connect-src 'self' https://accounts.google.com https://oauth2.googleapis.com https://archive.org https://*.archive.org https://*.supabase.co wss://*.supabase.co https://api.weather.gov https://api.emailjs.com https://www.theaudiodb.com https://www.googleapis.com https://www.omdbapi.com https://api.gdeltproject.org https://api.themoviedb.org https://en.wikipedia.org https://api.tvmaze.com https://www.youtube.com https://www.paypal.com https://*.paypal.com https://api.open-meteo.com https://geocoding-api.open-meteo.com https://boot.pluto.tv https://service-channels.clusters.pluto.tv https://api.piped.private.coffee https://pipedapi.kavin.rocks https://pipedapi.leptons.xyz https://pipedapi.nosebs.ru https://pipedapi.reallyaweso.me https://piped-api.lunar.icu; media-src 'self' https: blob:; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.paypal.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; frame-src https:; img-src 'self' data: https:; connect-src 'self' https://archive.org https://*.archive.org https://*.supabase.co wss://*.supabase.co https://api.weather.gov https://api.emailjs.com https://www.theaudiodb.com https://www.googleapis.com https://www.omdbapi.com https://api.gdeltproject.org https://api.themoviedb.org https://en.wikipedia.org https://api.tvmaze.com https://www.youtube.com https://www.paypal.com https://*.paypal.com https://api.open-meteo.com https://geocoding-api.open-meteo.com https://boot.pluto.tv https://service-channels.clusters.pluto.tv https://api.piped.private.coffee https://pipedapi.kavin.rocks https://pipedapi.leptons.xyz https://pipedapi.nosebs.ru https://pipedapi.reallyaweso.me https://piped-api.lunar.icu; media-src 'self' https: blob:; upgrade-insecure-requests">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>Good Morning Northstar News</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -3502,9 +3502,9 @@ window.NSProbeUsed=()=>{try{const b=JSON.parse(localStorage.getItem("ns_probe_bu
 function pump(){while(act<1&&Qp.length){const j=Qp.shift();act++;probeOne(j.id).then(r=>{j.r(r);setTimeout(()=>{act--;pump()},2500)})}}
 function probe(link){const id=idOf(link);if(!ok11(id))return Promise.resolve({err:"not a YouTube video link"});if(cache.has(id))return cache.get(id);if(!probeBudget())return Promise.resolve({err:"probe limit"});const p=new Promise(r=>{Qp.push({id,r});pump()});cache.set(id,p);p.then(r=>{if(!(r.sec>0))cache.delete(id)});return p}
 window.NSProbe={probe,WHY};
-async function fill(max,onp){const seen=X.D.get("rtseen",{}),need=X.lib().filter(x=>x&&ok11(idOf(x.yt))&&!x.bad&&!x.rtv&&!x.rterr).sort((a,b)=>(b.est?1:0)-(a.est?1:0)).slice(0,max||80);if(!need.length)return{n:0,ok:0,bad:0,fail:0};const res={};let i=0;
+async function fill(max,onp,apiOnly){const seen=X.D.get("rtseen",{}),need=X.lib().filter(x=>x&&ok11(idOf(x.yt))&&!x.bad&&!x.rtv&&!x.rterr).sort((a,b)=>(b.est?1:0)-(a.est?1:0)).slice(0,max||80);if(!need.length)return{n:0,ok:0,bad:0,fail:0};const res={};let i=0;
  let api=null;try{if(window.NSYT&&NSYT.ready())api=await NSYT.videos(need.map(x=>idOf(x.yt)))}catch(e){api=null}
- await Promise.all(need.map(x=>{const a=api&&api[idOf(x.yt)];const p=a?Promise.resolve(a):(seen[x.id]>0?Promise.resolve({sec:seen[x.id]}):probe(x.yt));return p.then(r=>{res[x.id]=r;onp&&onp(++i,need.length)})}));
+ await Promise.all(need.map(x=>{const a=api&&api[idOf(x.yt)];const p=a?Promise.resolve(a):(seen[x.id]>0?Promise.resolve({sec:seen[x.id]}):(apiOnly?Promise.resolve({err:"probe limit"}):probe(x.yt)));return p.then(r=>{res[x.id]=r;onp&&onp(++i,need.length)})}));
  const OE=window.NSResearch&&window.NSResearch.oembed;for(const id in res){const r=res[id];if(OE&&[2,100,101,150].includes(r.err)){const x=need.find(y=>y.id===id),o=await OE(idOf(x.yt));r.why=o.gone?"video removed, private or the link is not a real video":o.noemb?"the owner turned embedding off":o.err?"":"YouTube refused to play it in other sites (code "+r.err+")";if(!r.why)r.err="timeout"}}
  let ok=0,bad=0,fail=0;const L=X.lib().slice();L.forEach(x=>{const r=res[x.id];if(!r)return;
   if(r.sec>0){x.dur=Math.ceil(r.sec/15)/4;x.rtv=1;x.rtsrc="video";delete x.est;delete x.rterr;ok++;if(x.type==="movie"&&x.dur<40)x.rtnote="Only "+Math.round(x.dur)+" min: check it is the full movie";else if(x.type==="episode"&&x.dur>75)x.rtnote="Runs "+Math.round(x.dur)+" min: may be 2 episodes in one video";else delete x.rtnote}
@@ -3513,7 +3513,7 @@ async function fill(max,onp){const seen=X.D.get("rtseen",{}),need=X.lib().filter
  X.saveLib(L);X.AC&&X.AC.clear();return{n:need.length,ok,bad,fail}}
 window.NSRuntime={fill};
 let fillAt=0,filling=false;const ADM=/^#(admin|tvadmin|command|console)(\/|$)/;
-async function autoFill(){/* only runs through the official YouTube API (no hidden players); browser probes are manual now */if(filling||!window.NSYT||!NSYT.ready()||!X.isAd()||!ADM.test(location.hash)||Date.now()-fillAt<6e5)return;filling=true;let tot={n:0,ok:0,bad:0,fail:0};try{for(let k=0;k<6&&ADM.test(location.hash);k++){const r=await fill(80);Object.keys(tot).forEach(q=>tot[q]+=r[q]);if(r.n<80)break}if(!tot.n)fillAt=Date.now();if(tot.n)say("Runtimes read from the real videos: "+tot.ok+" set"+(tot.bad?", "+tot.bad+" broken links flagged":"")+(tot.fail?", "+tot.fail+" could not be read (see AI Research > Review runtimes)":"")+".")}catch(e){}finally{filling=false}}
+async function autoFill(){/* only runs through the official YouTube API (no hidden players); browser probes are manual now */if(filling||!window.NSYT||!X.isAd()||!ADM.test(location.hash)||Date.now()-fillAt<6e5)return;filling=true;try{if(!NSYT.ready())await NSYT.detect()}catch(e){}if(!NSYT.ready()){filling=false;fillAt=Date.now();return}let tot={n:0,ok:0,bad:0,fail:0};try{for(let k=0;k<6&&ADM.test(location.hash);k++){const r=await fill(80,null,true);Object.keys(tot).forEach(q=>tot[q]+=r[q]);if(r.n<80||!(r.ok+r.bad))break}if(!tot.n)fillAt=Date.now();if(tot.n)say("Runtimes read from the real videos: "+tot.ok+" set"+(tot.bad?", "+tot.bad+" broken links flagged":"")+(tot.fail?", "+tot.fail+" could not be read (see AI Research > Review runtimes)":"")+".")}catch(e){}finally{filling=false}}
 addEventListener("hashchange",()=>{setTimeout(autoFill,1500);setTimeout(autoFill,25000)});setTimeout(autoFill,4000);setTimeout(autoFill,25000);
 /* overlay: like a TV guide banner, shows on tune or when you move/tap, then fades */
 const de=document.documentElement,css=document.createElement("style");css.textContent=`html.nswatch #bcdock,html.nswatch #nsrt,html.nswatch .tvctl,html.nswatch .nsp .nsc{transition:opacity .5s,transform .5s}
@@ -4456,28 +4456,29 @@ function bindPlans(){if(sec!=="subs")return;const g=i=>R.querySelector("#"+i),X=
 NATIVE.subs=()=>plansHTML()+card("Upgrade, downgrade and suspend",accTable(true));
 const _dPL2=draw;draw=function(){_dPL2();try{bindPlans()}catch(e){console.error(e)}};
 
-/* ---- Google / YouTube account connection + playback health (Network Settings) ---- */
+/* ---- YouTube playback health (Network Settings) ---- */
 const YT={msg:"",bad:0,busy:0};
-function ytHTML(){const Y=window.NSYT;if(!Y)return card("YouTube / Google connection","<p class='err'>The connection module did not load. Reload the page.</p>");
- const s=Y.state(),cid=Y.getCid(),on=Y.ready(),lab={off:"Not connected",busy:"Waiting for Google...",on:"Connected",expired:"Session expired",error:"Error"}[s.state]||s.state;
- const used=window.NSProbeUsed?window.NSProbeUsed():0,https=/^https?:$/.test(location.protocol);
- return card("YouTube / Google account connection (official sign-in)",`<table>
- <tr><td>Status</td><td><span class="pill ${on?"":"x"}">${E(lab)}</span>${s.who?" &middot; YouTube channel: <b>"+E(s.who)+"</b>":""} ${s.msg?'<span class="err">'+E(s.msg)+"</span>":""}</td></tr>
- <tr><td>This site's origin</td><td>${E(location.origin)} ${https?"":'<span class="err">Not an http(s) address. YouTube rejects embeds and Google sign-in from saved files (error 153). Open the site from its real https:// address.</span>'}</td></tr>
- <tr><td>OAuth client ID</td><td><input id="ytcid" value="${E(cid)}" placeholder="1234-abc.apps.googleusercontent.com" style="${inpS};min-width:300px"> <button class="btn s" id="ytsave">Save</button></td></tr>
- <tr><td>Connection</td><td><button class="btn" id="ytcon" ${cid&&!YT.busy?"":"disabled"}>${on||s.state==="expired"?"Reconnect":"Connect Google account"}</button> <button class="btn s" id="ytdis" ${on||Y.hint()?"":"disabled"}>Disconnect</button></td></tr>
- <tr><td>Video checks</td><td><button class="btn s" id="ytrun" ${YT.busy?"disabled":""}>${on?"Check video lengths and embedding now (YouTube API)":"Check up to 10 videos with the throttled browser probe"}</button> <span class="mute">Browser probes used today: ${used} of 40</span></td></tr></table>
+function ytHTML(){const Y=window.NSYT;if(!Y)return card("YouTube playback health","<p class='err'>The video-check module did not load. Reload the page.</p>");
+ const v=Y.via(),used=window.NSProbeUsed?window.NSProbeUsed():0,https=/^https?:$/.test(location.protocol);
+ return card("YouTube playback health",`<table>
+ <tr><td>YouTube API for video checks</td><td>${v?'<span class="pill">Available</span> '+E(v):'<span class="pill x">Not found</span> <span class="mute">No saved key and no /api/yt route answered.'+(Y.lastErr()?" "+E(Y.lastErr()):"")+"</span>"} <button class="btn s" id="ytdet">Test now</button></td></tr>
+ <tr><td>Site address</td><td>${E(location.origin)} ${https?"":'<span class="err">Not an http(s) address. YouTube rejects embeds from saved files (error 153). Open the site from its real https:// address.</span>'}</td></tr>
+ <tr><td>Video checks</td><td><button class="btn s" id="ytrun" ${YT.busy?"disabled":""}>${v?"Check video lengths and embedding now":"Check up to 10 videos with the throttled browser probe"}</button> <span class="mute">Browser probes used today: ${used} of 40</span></td></tr></table>
  ${YT.msg?`<p style="color:${YT.bad?"#ffb4b4":"#5fe0b5"}">${E(YT.msg)}</p>`:""}
- <p class="mute"><b>Why playback was being flagged.</b> The old code automatically loaded up to 480 hidden, auto-playing YouTube players in the background every time the admin opened an admin page. From one IP address that looks like automated traffic, and Google answers with "confirm you're not a bot". That automatic loop is now off. With a connection, lengths and embed permissions are read in batches of 50 through the official YouTube Data API instead (no hidden players). Without it, probes only run when you press the button, one at a time, muted, never auto-playing, with a daily cap.</p>
- <p class="mute"><b>What a connection cannot do.</b> It does not log embedded players in and it cannot clear Google's bot check; that check is decided by Google from IP and behaviour. A viewer who is signed in to YouTube in their own browser is recognised by the player (visitors who accepted cookies now get the standard youtube.com player so their own login applies; others keep privacy mode). If a viewer still sees the check, the player now says so and offers "Open on YouTube".</p>
- <p class="mute"><b>One-time setup in Google Cloud Console (only you can do this):</b> create a project, enable "YouTube Data API v3", configure the OAuth consent screen (add your own account as a test user while it is in Testing), create an OAuth client of type "Web application", add <b>${E(location.origin)}</b> under Authorized JavaScript origins, then paste the client ID above. No client secret is needed or used. In Testing mode Google expires the grant after 7 days; publishing the consent screen avoids that.</p>`)}
+ <p class="mute"><b>Why playback was being flagged.</b> The old code automatically loaded up to 480 hidden, auto-playing YouTube players in the background every time an admin page opened. From one IP address that looks like automated traffic, and Google answers with "confirm you're not a bot". That loop is off. Video lengths and embed permissions are now read in batches of 50 through the YouTube API the site already uses (no sign-in, no hidden players). Without it, probes only run when you press the button, one at a time, muted, never auto-playing, with a daily cap.</p>
+ <p class="mute">If a viewer still sees Google's check, the player now says so and offers "Open on YouTube". Viewers who accepted cookies get the standard youtube.com player so their own YouTube login applies; others keep privacy mode.</p>`)}
 function bindYT(){if(sec!=="set")return;const g=i=>R.querySelector("#"+i),Y=window.NSYT;if(!Y)return;
  const say2=(m,b)=>{YT.msg=m;YT.bad=b?1:0;YT.busy=0;draw()};
- const sv=g("ytsave");if(sv)sv.onclick=()=>{try{Y.setCid(g("ytcid").value);say2(Y.getCid()?"Client ID saved. Press Connect.":"Client ID removed and the connection cleared.")}catch(e){say2(e.message,1)}};
- const cn=g("ytcon");if(cn)cn.onclick=async()=>{YT.busy=1;YT.msg="";draw();try{await Y.connect();say2("Connected. Tokens stay in memory only and renew silently about every hour.")}catch(e){say2(e.message,1)}};
- const ds=g("ytdis");if(ds)ds.onclick=()=>{Y.disconnect();say2("Disconnected and the access was revoked with Google.")};
- const rn=g("ytrun");if(rn)rn.onclick=async()=>{if(!window.NSRuntime)return say2("The runtime reader did not load.",1);YT.busy=1;YT.msg="Checking...";draw();try{const r=await window.NSRuntime.fill(Y.ready()?200:10);say2(r.n?"Checked "+r.n+" video(s): "+r.ok+" lengths set, "+r.bad+" broken or non-embeddable flagged, "+r.fail+" could not be read.":"Nothing needs checking.")}catch(e){say2("Check failed: "+e.message,1)}}}
-NATIVE.set=()=>setHTML()+ytHTML();
+ const dt=g("ytdet");if(dt)dt.onclick=async()=>{YT.msg="Testing...";YT.bad=0;draw();const ok=await Y.detect(true);say2(ok?"The YouTube API answered ("+Y.via()+").":"The YouTube API did not answer. Save a key in AI Research > YouTube connection, or add the /api/yt server route.",!ok)};
+ const rn=g("ytrun");if(rn)rn.onclick=async()=>{if(!window.NSRuntime)return say2("The runtime reader did not load.",1);YT.busy=1;YT.msg="Checking...";draw();try{if(!Y.ready())await Y.detect();const r=await window.NSRuntime.fill(Y.ready()?200:10);say2(r.n?"Checked "+r.n+" video(s): "+r.ok+" lengths set, "+r.bad+" broken or non-embeddable flagged, "+r.fail+" could not be read.":"Nothing needs checking.")}catch(e){say2("Check failed: "+e.message,1)}}}
+function gsiHTML(){const c=S.cfg(),ret=location.origin+location.pathname;
+ return card("Google sign-in for members",`<table>
+ <tr><td>Status</td><td>${window.NSGSI?'<span class="pill">Button is on the login page</span>':'<span class="pill x">Module missing</span>'} <span class="mute">It only works after the two steps below.</span></td></tr>
+ <tr><td>1. Google Cloud Console</td><td>Create an OAuth client of type "Web application". Under Authorized redirect URIs add:<br><code>${E(c.url)}/auth/v1/callback</code></td></tr>
+ <tr><td>2. Supabase dashboard</td><td>Authentication &gt; Providers &gt; Google: switch it on and paste the client ID and client secret. Under Authentication &gt; URL Configuration add this to Redirect URLs:<br><code>${E(ret)}</code></td></tr>
+ <tr><td>Accounts</td><td>A Google member becomes a normal NorthStar account (shown in Users &amp; Accounts) and can be given a plan, suspended or reactivated like any other.</td></tr></table>
+ <p class="mute">The client secret stays in Supabase only. Nothing secret is placed in this page.</p>`)}
+NATIVE.set=()=>setHTML()+gsiHTML()+ytHTML();
 const _dYT=draw;draw=function(){_dYT();try{bindYT()}catch(e){console.error(e)}};
 addEventListener("ns-yt",()=>{if(!R.hidden&&sec==="set"&&!busyIn())draw()});
 
@@ -4609,45 +4610,70 @@ V.command=function(a,el){prev.apply(this,arguments);try{const S=window.NSSB;if(!
 })();
 </script>
 
-<script id="ns-yt-auth">
-/* NSYT: authorized Google/YouTube connection (Google Identity Services token model, read-only YouTube scope).
-   - Uses only Google's supported OAuth flow. No passwords, cookies or tokens are ever copied, scraped or replayed.
-   - The access token lives in memory only (never localStorage/sessionStorage). Only a non-secret "connected before" hint and the public OAuth client ID are stored.
-   - Tokens last ~1 hour. Before each API call the token is renewed silently (prompt:none); if Google needs the person, the state becomes "expired" and the panel asks to Reconnect.
-   - What it is for: reading video length, privacy and embeddable status in batches of 50 through the YouTube Data API, replacing hidden autoplaying iframes. It does NOT sign embedded players in: an embedded player uses the viewer's own YouTube session in their browser. */
+<script id="ns-google-signin">
+/* Google sign-in for members, through Supabase Auth's Google provider (PKCE flow: the code returns in the query string, so the site's #hash router is never disturbed).
+   Creates the same two sessions a password login does: the local site account and the Supabase session (ns_user_jwt) that powers plan sync.
+   Nothing secret lives here: the Google client secret is stored only in the Supabase dashboard. */
 (function(){"use strict";
-const SCOPE="https://www.googleapis.com/auth/youtube.readonly",CK="ns_gclient_id",HINT="ns_yt_hint";
-const st={tok:"",exp:0,state:"off",msg:"",who:"",tc:null,cid:""};let waiter=null,gsi=null,expT=0;
-const ls={get:k=>{try{return localStorage.getItem(k)||""}catch(e){return""}},set:(k,v)=>{try{v?localStorage.setItem(k,v):localStorage.removeItem(k)}catch(e){}}};
+const C=()=>{const x=window.NSSB&&window.NSSB.cfg();return x&&x.ok?x:null};
+const b64u=b=>btoa(String.fromCharCode.apply(null,new Uint8Array(b))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+const rnd=n=>b64u(crypto.getRandomValues(new Uint8Array(n)));
+const say2=m=>{try{if(typeof say==="function")say(m);else alert(m)}catch(e){alert(m)}};
+async function start(back){const c=C();if(!c)return say2("Sign-in is not set up on this site yet.");
+ if(!(window.crypto&&crypto.subtle))return say2("Google sign-in needs a secure (https) connection.");
+ try{const ver=rnd(48),chal=b64u(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(ver)));
+  sessionStorage.setItem("ns_pkce",JSON.stringify({v:ver,back:back||"profile",t:Date.now()}));
+  location.assign(c.url+"/auth/v1/authorize?provider=google&redirect_to="+encodeURIComponent(location.origin+location.pathname)+"&code_challenge="+chal+"&code_challenge_method=s256")}
+ catch(e){say2("Could not start Google sign-in: "+e.message)}}
+function fail(m){say2(m||"Google sign-in did not finish. Please try again.");try{go("login")}catch(e){}}
+async function finish(){const q=new URLSearchParams(location.search),code=q.get("code"),err=q.get("error_description")||q.get("error");if(!code&&!err)return;
+ let st=null;try{st=JSON.parse(sessionStorage.getItem("ns_pkce")||"null")}catch(e){}
+ if(!st)return;                      /* a ?code that this page did not ask for is left alone */
+ try{sessionStorage.removeItem("ns_pkce");history.replaceState(null,"",location.pathname+location.hash)}catch(e){}
+ if(err||!code)return fail(err?"Google sign-in was cancelled or refused: "+err:"");
+ if(Date.now()-st.t>6e5)return fail("The Google sign-in took too long. Please try again.");
+ const c=C();if(!c)return fail("Sign-in is not set up on this site yet.");
+ try{const r=await fetch(c.url+"/auth/v1/token?grant_type=pkce",{method:"POST",headers:{apikey:c.anon,"Content-Type":"application/json"},body:JSON.stringify({auth_code:code,code_verifier:st.v})});
+  const j=await r.json().catch(()=>({}));if(!r.ok||!j.access_token)return fail((j.error_description||j.msg||j.message||"Google sign-in failed ("+r.status+")"));
+  const email=String(j.user&&j.user.email||"").toLowerCase();if(!email)return fail("Google did not share an email address, so the account could not be created.");
+  try{localStorage.setItem("ns_user_jwt",JSON.stringify({token:j.access_token,refresh:j.refresh_token||"",exp:Date.now()+(j.expires_in||3600)*1e3,email}))}catch(e){}
+  const pr=window.NSAUTH?await NSAUTH.prof():null;
+  if(pr&&pr.status==="suspended"){try{NSAUTH.out()}catch(e){}return fail("This account is suspended. Please contact support.")}
+  let u=users.find(x=>x.email===email);
+  if(!u){const md=(j.user&&j.user.user_metadata)||{};u={id:uid(),email,name:String(md.full_name||md.name||email.split("@")[0]).slice(0,60),discord:"",h:null,at:now(),bio:"",plan:null,planEnd:0,google:1};users.push(u)}
+  session=u.id;if(pr&&window.NSAUTH)NSAUTH.apply(u,pr);DB.set("session",session);save();
+  go(st.back||"profile")}
+ catch(e){fail("Could not reach the sign-in service: "+e.message)}}
+const G='<svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true" style="vertical-align:-3px;margin-right:8px"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>';
+function addBtn(el){const go=(el||document).querySelector("#go"),card=go&&go.closest(".card");if(!card||card.querySelector("#nsgsi"))return;
+ const w=card.querySelector(".warn"),row=document.createElement("div");row.className="row";row.innerHTML='<button class="btn alt" id="nsgsi" type="button" style="width:100%">'+G+'Continue with Google</button>';
+ if(w){w.parentNode.insertBefore(row,w);w.textContent="Microsoft sign-in and 2-step codes are not turned on in this version."}else card.appendChild(row);
+ row.querySelector("button").onclick=()=>start(typeof pend!=="undefined"&&pend&&pend.go||"profile")}
+try{if(typeof V!=="undefined"&&typeof V.login==="function"){const prev=V.login;V.login=function(a,el){prev.apply(this,arguments);try{addBtn(el)}catch(e){console.error(e)}}}}catch(e){}
+/* the login card can be drawn before this script runs or redrawn by other scripts, so attach whenever it appears */
+let qt=0;const watch=()=>{clearTimeout(qt);qt=setTimeout(()=>{try{addBtn(document)}catch(e){console.error(e)}},30)};
+try{new MutationObserver(watch).observe(document.body,{childList:true,subtree:true});watch()}catch(e){}
+window.NSGSI={start,finish};
+finish();
+})();
+</script>
+
+<script id="ns-yt-auth">
+/* NSYT: video length / embeddable / privacy checks through the YouTube Data API the site already has (saved key or /api/yt route).
+   No sign-in, no OAuth, no hidden players. Batches of 50 ids per request. */
+(function(){"use strict";
+let proxyOk=false,tried=0,lastErr="";
+const localKey=()=>{try{return String(DB.get("yt_key_local","")||"").trim()}catch(e){return""}};
+const via=()=>localKey()?"saved API key":proxyOk?"server route /api/yt":"";
+const ready=()=>!!via();
 const emit=()=>{try{window.dispatchEvent(new CustomEvent("ns-yt"))}catch(e){}};
-const getCid=()=>ls.get(CK).trim();
-function setCid(v){v=String(v||"").trim();if(v&&!/^[\w.-]+\.apps\.googleusercontent\.com$/.test(v))throw new Error("That is not a Google OAuth Web client ID. It should end in .apps.googleusercontent.com.");ls.set(CK,v);st.tc=null;if(!v)disconnect();else emit()}
-const loadGsi=()=>gsi||(gsi=new Promise((res,rej)=>{if(window.google&&google.accounts&&google.accounts.oauth2)return res();const s=document.createElement("script");s.src="https://accounts.google.com/gsi/client";s.async=true;s.onload=()=>res();s.onerror=()=>{gsi=null;rej(new Error("The Google sign-in library did not load (offline or blocked by an extension)."))};document.head.appendChild(s)}));
-function client(){const cid=getCid();if(!cid)throw new Error("Save your Google OAuth client ID first.");if(st.tc&&st.cid===cid)return st.tc;st.cid=cid;st.tc=google.accounts.oauth2.initTokenClient({client_id:cid,scope:SCOPE,callback:onTok,error_callback:onErr});return st.tc}
-function onTok(r){const w=waiter;waiter=null;
- if(r&&r.access_token){if(r.scope&&String(r.scope).indexOf("youtube.readonly")<0){st.state="error";st.msg="Google signed you in, but YouTube read access was not granted.";emit();w&&w.rej(new Error(st.msg));return}
-  st.tok=r.access_token;st.exp=Date.now()+(+r.expires_in||3600)*1e3;st.state="on";st.msg="";ls.set(HINT,"1");clearTimeout(expT);expT=setTimeout(()=>{if(Date.now()>=st.exp-5e3){st.tok="";st.state="expired";st.msg="The Google session expired. It renews on the next lookup or press Reconnect.";emit()}},Math.max(1e3,st.exp-Date.now()-5e3));emit();w&&w.res(st.tok)}
- else{const m=(r&&(r.error_description||r.error))||"Google did not return a token.";st.state=st.tok?"on":"error";st.msg=m;emit();w&&w.rej(new Error(m))}}
-function onErr(e){const w=waiter;waiter=null;const t=e&&e.type;st.msg=t==="popup_closed"?"The Google sign-in window was closed before finishing.":t==="popup_failed_to_open"?"The browser blocked the Google sign-in window. Allow pop-ups for this site and try again.":"Google sign-in failed ("+(t||"unknown")+").";st.state=st.tok?"on":"off";emit();w&&w.rej(new Error(st.msg))}
-function request(prompt,ms){return new Promise((res,rej)=>{if(waiter)return rej(new Error("A Google sign-in is already in progress."));let to=0;const w={res:v=>{clearTimeout(to);res(v)},rej:e=>{clearTimeout(to);rej(e)}};waiter=w;if(ms)to=setTimeout(()=>{if(waiter===w){waiter=null;rej(new Error("Google did not answer in time."))}},ms);try{client().requestAccessToken({prompt})}catch(e){clearTimeout(to);waiter=null;rej(e)}})}
-async function connect(){await loadGsi();st.state="busy";st.msg="";emit();try{await request("select_account");whoami().catch(()=>{});return true}catch(e){if(st.state==="busy"){st.state="off";emit()}throw e}}
-async function fresh(){if(st.tok&&st.exp-6e4>Date.now())return st.tok;if(!getCid()||!ls.get(HINT))return"";
- try{await loadGsi();return await request("none",9000)}catch(e){st.tok="";st.exp=0;st.state="expired";st.msg="The Google session expired and could not renew silently. Press Reconnect.";emit();return""}}
-async function whoami(){const t=await fresh();if(!t)return;const r=await fetch("https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true",{headers:{Authorization:"Bearer "+t}});const j=await r.json().catch(()=>({}));st.who=(j.items&&j.items[0]&&j.items[0].snippet&&j.items[0].snippet.title)||"(account has no YouTube channel)";emit()}
-function disconnect(){const t=st.tok;st.tok="";st.exp=0;st.state="off";st.msg="";st.who="";ls.set(HINT,"");clearTimeout(expT);try{if(t&&window.google&&google.accounts&&google.accounts.oauth2)google.accounts.oauth2.revoke(t,()=>{})}catch(e){}emit()}
+async function detect(force){if(force)tried=0;if(tried||(!force&&ready()))return ready();tried=1;lastErr="";try{await window.NSX.ytGet("videos",{part:"id",id:"dQw4w9WgXcQ"});proxyOk=true}catch(e){lastErr=String(e.message||e)}emit();return ready()}
 const iso=d=>{const m=/^P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?$/.exec(d||"");return m?(+m[1]||0)*86400+(+m[2]||0)*3600+(+m[3]||0)*60+(+m[4]||0):0};
-const ready=()=>!!st.tok&&st.exp-6e4>Date.now();
+function fold(j,part,out){const seen={};(j.items||[]).forEach(v=>{seen[v.id]=1;const s=v.status||{},sec=iso(v.contentDetails&&v.contentDetails.duration);out[v.id]=s.privacyStatus==="private"?{err:100}:s.embeddable===false?{err:101}:sec>0?{sec}:{err:"no fixed length (live stream or premiere)"}});part.forEach(id=>{if(!seen[id])out[id]={err:100}})}
 async function videos(ids){const out={};ids=[...new Set((ids||[]).filter(i=>/^[\w-]{11}$/.test(i)))];
- for(let i=0;i<ids.length;i+=50){const part=ids.slice(i,i+50),url="https://www.googleapis.com/youtube/v3/videos?part=contentDetails,status&maxResults=50&id="+part.join(",");
-  let t=await fresh();if(!t)throw new Error("Not connected to Google.");
-  let r=await fetch(url,{headers:{Authorization:"Bearer "+t}});
-  if(r.status===401){st.tok="";st.exp=0;t=await fresh();if(!t)throw new Error("The Google session expired. Reconnect.");r=await fetch(url,{headers:{Authorization:"Bearer "+t}})}
-  const j=await r.json().catch(()=>({}));
-  if(!r.ok){const m=(j.error&&j.error.message)||("HTTP "+r.status);if(r.status===403&&/quota/i.test(m)){st.msg="The YouTube API daily quota is used up. It resets daily.";emit()}throw new Error("YouTube API: "+m)}
-  const seen={};(j.items||[]).forEach(v=>{seen[v.id]=1;const s=v.status||{},sec=iso(v.contentDetails&&v.contentDetails.duration);out[v.id]=s.privacyStatus==="private"?{err:100}:s.embeddable===false?{err:101}:sec>0?{sec}:{err:"no fixed length (live stream or premiere)"}});
-  part.forEach(id=>{if(!seen[id])out[id]={err:100}})}
+ for(let i=0;i<ids.length;i+=50){const part=ids.slice(i,i+50);const j=await window.NSX.ytGet("videos",{part:"contentDetails,status",maxResults:"50",id:part.join(",")});fold(j,part,out)}
  return out}
-window.NSYT={getCid,setCid,connect,disconnect,ready,fresh,videos,state:()=>st,hint:()=>!!ls.get(HINT)};
+window.NSYT={ready,via,detect,videos,lastErr:()=>lastErr};
 })();
 </script>
 
