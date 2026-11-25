@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.paypal.com https://pagead2.googlesyndication.com https://*.googlesyndication.com https://adservice.google.com https://*.doubleclick.net https://*.adtrafficquality.google; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; frame-src https:; img-src 'self' data: https:; connect-src 'self' https://graph.facebook.com https://pagead2.googlesyndication.com https://*.googlesyndication.com https://adservice.google.com https://*.doubleclick.net https://*.adtrafficquality.google https://fundingchoicesmessages.google.com https://archive.org https://*.archive.org https://*.supabase.co wss://*.supabase.co https://api.weather.gov https://api.emailjs.com https://www.theaudiodb.com https://www.googleapis.com https://www.omdbapi.com https://api.gdeltproject.org https://api.themoviedb.org https://en.wikipedia.org https://api.tvmaze.com https://www.youtube.com https://www.paypal.com https://*.paypal.com https://api.open-meteo.com https://geocoding-api.open-meteo.com https://boot.pluto.tv https://service-channels.clusters.pluto.tv https://api.piped.private.coffee https://pipedapi.kavin.rocks https://pipedapi.leptons.xyz https://pipedapi.nosebs.ru https://pipedapi.reallyaweso.me https://piped-api.lunar.icu; media-src 'self' https: blob:; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.paypal.com https://pagead2.googlesyndication.com https://*.googlesyndication.com https://adservice.google.com https://*.doubleclick.net https://*.adtrafficquality.google https://fundingchoicesmessages.google.com https://www.googletagservices.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; frame-src https:; img-src 'self' data: https:; connect-src 'self' https://graph.facebook.com https://pagead2.googlesyndication.com https://*.googlesyndication.com https://adservice.google.com https://*.doubleclick.net https://*.adtrafficquality.google https://fundingchoicesmessages.google.com https://archive.org https://*.archive.org https://*.supabase.co wss://*.supabase.co https://api.weather.gov https://api.emailjs.com https://www.theaudiodb.com https://www.googleapis.com https://www.omdbapi.com https://api.gdeltproject.org https://api.themoviedb.org https://en.wikipedia.org https://api.tvmaze.com https://www.youtube.com https://www.paypal.com https://*.paypal.com https://api.open-meteo.com https://geocoding-api.open-meteo.com https://boot.pluto.tv https://service-channels.clusters.pluto.tv https://api.piped.private.coffee https://pipedapi.kavin.rocks https://pipedapi.leptons.xyz https://pipedapi.nosebs.ru https://pipedapi.reallyaweso.me https://piped-api.lunar.icu; media-src 'self' https: blob:; upgrade-insecure-requests">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>Good Morning Northstar News</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -655,7 +655,7 @@ Night at the Museum (all films)|Family|Night at the Museum|7`.split("\n").map(l=
 CFG.MOVIES=FILMS.map(f=>[f.t,f.p>=8?1:0]);CFG.TV=SHOWS.map(x=>[x.t,x.p>=8?1:0]);
 const PLATS=[["Netflix","SUBSCRIPTION","https://www.netflix.com",""],["Hulu","SUBSCRIPTION","https://www.hulu.com",""],["Disney+","SUBSCRIPTION","https://www.disneyplus.com",""],["HBO Max","SUBSCRIPTION","https://www.hbomax.com","Formerly Max"],["Peacock","SUBSCRIPTION","https://www.peacocktv.com",""],["Paramount+","SUBSCRIPTION","https://www.paramountplus.com",""],["Amazon Prime Video","SUBSCRIPTION","https://www.primevideo.com","Also rent and buy"],["Apple TV","SUBSCRIPTION","https://tv.apple.com","Also rent and buy"],["Tubi","FREE","https://tubitv.com","Free with ads"],["Pluto TV","FREE","https://pluto.tv","Free with ads"],["The Roku Channel","FREE","https://therokuchannel.roku.com","Free with ads"],["Crackle","FREE","https://www.crackle.com","Free with ads"],["YouTube Movies","RENT / BUY","https://www.youtube.com/movies",""],["Fandango at Home","RENT / BUY","https://athome.fandango.com",""]];
 const PURL={"Netflix":PLATS[0][2],"Hulu":PLATS[1][2],"Disney Plus":PLATS[2][2],"Max":PLATS[3][2],"HBO Max":PLATS[3][2],"Peacock":PLATS[4][2],"Peacock Premium":PLATS[4][2],"Peacock Premium Plus":PLATS[4][2],"Paramount Plus":PLATS[5][2],"Amazon Prime Video":PLATS[6][2],"Amazon Video":PLATS[6][2],"Apple TV":PLATS[7][2],"Apple TV Plus":PLATS[7][2],"Tubi TV":PLATS[8][2],"Pluto TV":PLATS[9][2],"The Roku Channel":PLATS[10][2],"Crackle":PLATS[11][2],"YouTube":PLATS[12][2],"Fandango At Home":PLATS[13][2]};
-const NAVL={guide:"TV Guide",chicago:"One Chicago","law-and-order":"Law & Order",networks:"Networks",shows:"TV Shows",streaming:"Streaming Guide",pluto:"Pluto TV",whatsnew:"What's New","popular-shows":"Popular Shows","popular-movies":"Popular Movies",free:"Free to Watch"};
+const NAVL={videos:"Video Hub",guide:"TV Guide",chicago:"One Chicago","law-and-order":"Law & Order",networks:"Networks",shows:"TV Shows",streaming:"Streaming Guide",pluto:"Pluto TV",whatsnew:"What's New","popular-shows":"Popular Shows","popular-movies":"Popular Movies",free:"Free to Watch"};
 const ON={network:"networks",show:"shows",movie:"movies",story:"news"};
 const NETUSE={"NBC":"Peacock","CBS":"Paramount+","Nickelodeon":"Paramount+","Comedy Central":"Paramount+","MTV":"Paramount+","BET":"Paramount+","Paramount Network":"Paramount+","HBO":"HBO Max","Showtime":"Paramount+ (Showtime tier)","ABC":"Hulu and Disney+","FX":"Hulu","Disney Channel":"Disney+","Disney XD":"Disney+","Disney Junior":"Disney+","The CW":"The CW app (free with ads)","Starz":"Starz","AMC":"AMC+","ESPN":"ESPN app"};
 
@@ -707,13 +707,13 @@ const go=h=>{cur=h||"home";window.__nsCur=cur;try{history.pushState({ns:cur},"",
 window.NGO=function(h){try{go(String(h||"home").replace(/^#/,""))}catch(e){try{location.hash=h}catch(x){}}};
 
 let pend=null;
-const PAGES=["home","news","networks","shows","movies","streaming","guide","chicago","law-and-order","whatsnew","popular-shows","popular-movies","free","artists","live","plans","write"];
-function chrome(){$("#tick").innerHTML=`<div class="tl"><i></i>LATEST</div><div class="tm"><span>${live().slice(0,8).map(p=>`<a href="#story/${p.id}">${esc(p.title)}</a><em>&#9670;</em>`).join("")}<a href="#chicago">One Chicago</a><em>&#9670;</em><a href="#law-and-order">Law &amp; Order</a><em>&#9670;</em><a href="#streaming">Where to watch</a></span></div><div class="tr" id="clk"></div>`;const tk=()=>{const c=$("#clk");if(c)c.textContent=new Date().toLocaleString([],{weekday:"short",month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})};tk();if(!window._clk)window._clk=setInterval(tk,3e4);const p=cur.split("/")[0],u=me();
+const PAGES=["home","news","networks","shows","movies","videos","streaming","guide","chicago","law-and-order","whatsnew","popular-shows","popular-movies","free","artists","live","plans","write"];
+function chrome(){$("#tick").innerHTML=`<div class="tl"><i></i>LATEST</div><div class="tm"><span>${live().slice(0,8).map(p=>`<a href="#story/${p.id}">${esc(p.title)}</a><em>&#9670;</em>`).join("")}<a href="#chicago">One Chicago</a><em>&#9670;</em><a href="#law-and-order">Law &amp; Order</a><em>&#9670;</em><a href="#streaming">Where to watch</a></span></div><div class="tr" id="clk"></div>`;const tk=()=>{const c=$("#clk");if(c)c.textContent=new Date().toLocaleString([],{weekday:"short",month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})};tk();if(!window._clk)window._clk=setInterval(tk,3e4);const p=cur.split("/")[0].split("?")[0],u=me();
  $("#wl").innerHTML='<a class="btn" href="#plans">Subscribe</a><a href="#live">Live</a><input id="sq" type="search" placeholder="Search shows, movies, news" aria-label="Search" style="width:200px;margin:0;padding:6px 10px">';const sq=$("#sq");sq.onkeydown=e=>{if(e.key==="Enter"&&sq.value.trim())go("search/"+encodeURIComponent(sq.value.trim()))};$("#nav").innerHTML=PAGES.map(x=>`<a href="#${x}" class="${(ON[p]||p)===x?"on":""}">${NAVL[x]||x[0].toUpperCase()+x.slice(1)}</a>`).join("")+(isAdmin(u)?`<a href="#console" class="${p==="admin"?"on":""}">Admin</a>`:"");
  $("#who").innerHTML=u?`<a href="#profile" data-testid="nav-account">Account</a><a href="#" id="out" data-testid="nav-logout">Log out</a>`:`<a href="#login" data-testid="nav-login">Login</a><a class="btn alt" href="#login/register" data-testid="nav-register">Create account</a>`;
  const o=$("#out");if(o)o.onclick=e=>{e.preventDefault();session=null;DB.set("session",null);if(window.NSAUTH)NSAUTH.out();go("home");route()}}
 window.__tvBoot=true;/* TV pages are drawn once, after the real NorthStar player is registered (see NSPlay), so no temporary player is ever shown */
-function route(){window.__nsAd=0;chrome();const [p,arg]=cur.split("/");if(window.__tvBoot&&/^(tv|channels|tvguide|live|broadcast)$/.test(p))return;const f=V[p]||V.home;const __app=$("#app");__app.innerHTML="";try{f(arg,__app)}catch(err){console.error("NorthStar page error on",p,err);__app.innerHTML='<div class="card" style="max-width:620px;margin:40px auto"><h2 style="margin-top:0">That page hit a snag</h2><p class="mute">'+esc((err&&err.message)||"Unknown error")+'</p><p><a class="btn" href="#home">Back to the home page</a> <button class="btn alt" onclick="location.reload()">Reload</button></p></div>';return}hydrate($("#app"));hydrateWiki($("#app"));availLoad($("#app"));ratingsInto($("#app"));window.scrollTo(0,0)}
+function route(){window.__nsAd=0;chrome();const [p0,arg]=cur.split("/"),p=String(p0).split("?")[0];if(window.__tvBoot&&/^(tv|channels|tvguide|live|broadcast)$/.test(p))return;const f=V[p]||V.home;const __app=$("#app");__app.innerHTML="";try{f(arg,__app)}catch(err){console.error("NorthStar page error on",p,err);__app.innerHTML='<div class="card" style="max-width:620px;margin:40px auto"><h2 style="margin-top:0">That page hit a snag</h2><p class="mute">'+esc((err&&err.message)||"Unknown error")+'</p><p><a class="btn" href="#home">Back to the home page</a> <button class="btn alt" onclick="location.reload()">Reload</button></p></div>';return}hydrate($("#app"));hydrateWiki($("#app"));availLoad($("#app"));ratingsInto($("#app"));window.scrollTo(0,0)}
 addEventListener("error",e=>say("Something went wrong: "+(e.message||"unknown error")));addEventListener("hashchange",()=>{try{const h=location.hash||"";if(h.length>1)cur=decodeURIComponent(h.slice(1));window.__nsCur=cur}catch(e){}route();setTimeout(nsClean,0)});addEventListener("popstate",e=>{cur=(e.state&&e.state.ns)||cur||"home";window.__nsCur=cur;route();setTimeout(nsClean,0)});
 document.addEventListener("click",e=>{const a=e.target.closest&&e.target.closest('a[href^="#"]');if(!a||a.id==="gskip")return;const h=a.getAttribute("href").slice(1);e.preventDefault();if(h)go(h)});
 const live=()=>posts.filter(p=>p.status==="live").sort((a,b)=>b.at-a.at);
@@ -1043,7 +1043,7 @@ const logoRow=(arr)=>`<div class="logos">${arr.join("")}</div>`;
 const yid=v=>{const m=String(v).match(/(?:v=|youtu\.be\/|embed\/)([\w-]{11})|^([\w-]{11})$/);return m?(m[1]||m[2]):""};
 function embedUrl(d){if(DB.get("ck",null)!==true){window._pe=()=>embedUrl(d);cookieBar(true);return}d.innerHTML=`<iframe src="${esc(d.dataset.u)}" allow="autoplay; encrypted-media; fullscreen; picture-in-picture; clipboard-write" allowfullscreen title="Player"></iframe>`}
 function headlines(q){const key="gd:"+q,c=DB.get(key,null);if(c&&now()-c.at<108e5)return Promise.resolve(c.a);if(typeof fetch!=="function")return Promise.resolve([]);
- return fetch("https://api.gdeltproject.org/api/v2/doc/doc?query="+encodeURIComponent(q+" sourcelang:english")+"&mode=artlist&maxrecords=8&format=json&sort=datedesc").then(r=>r.ok?r.json():null).then(j=>{const a=((j&&j.articles)||[]).filter(x=>/^https?:\/\//.test(x.url||"")).map(x=>({t:x.title,u:x.url.replace(/^http:/,"https:"),d:x.domain}));if(a.length)DB.set(key,{a,at:now()});return a}).catch(()=>[])}
+ const ctl=typeof AbortController==="function"?new AbortController():null,tm=ctl?setTimeout(()=>{try{ctl.abort()}catch(e){}},6000):0;return fetch("https://api.gdeltproject.org/api/v2/doc/doc?query="+encodeURIComponent(q+" sourcelang:english")+"&mode=artlist&maxrecords=8&format=json&sort=datedesc",ctl?{signal:ctl.signal}:undefined).then(r=>r.ok?r.json():null).then(j=>{if(tm)clearTimeout(tm);const a=((j&&j.articles)||[]).filter(x=>/^https?:\/\//.test(x.url||"")).map(x=>({t:x.title,u:x.url.replace(/^http:/,"https:"),d:x.domain}));if(a.length)DB.set(key,{a,at:now()});return a}).catch(()=>[])}
 function headlinesInto(el,q){if(!el)return;el.innerHTML='<p class="mute">Loading headlines...</p>';headlines(q).then(a=>{if(!el.isConnected)return;el.innerHTML=a.length?`<ul class="hl">${a.map(x=>`<li><a href="${esc(x.u)}" target="_blank" rel="noopener noreferrer nofollow">${esc(x.t)}</a> <span class="mute">${esc(x.d)}</span></li>`).join("")}</ul><p class="mute">Headlines link to each publisher's own site.</p>`:'<p class="mute">No recent headlines found.</p>'})}
 const HLQ='("Chicago Fire" OR "Law & Order" OR "Tate McRae" OR "Adele" OR "Yellowstone" OR "Futurama" OR "Grey\'s Anatomy")';
 function tmdbImg(kind,n){const key="tm:"+kind+":"+n,c=DB.get(key,null);if(c)return Promise.resolve(c);if(!CFG.TMDB_KEY||CFG.TMDB_KEY==="proxy"||typeof fetch!=="function")return Promise.resolve(null);const K=CFG.TMDB_KEY,B="/api/tmdb/",ty=kind==="movie"?"movie":"tv",I="https://image.tmdb.org/t/p/";
@@ -1802,12 +1802,12 @@ Object.assign(V,{
   $("#gidf").onchange=e=>{const f=e.target.files[0];if(f)send(f,f.name)}},
  community(a,el){el.innerHTML=`${pageHero("Community","Meet readers and writers, follow them and like their pages.","#0b3b45")}<div class="gprof-grid" id="gcp" data-testid="community-profiles"><p class="mute">Loading members...</p></div><h2>From our Facebook</h2><div id="gcfb" data-testid="facebook-feed"></div>`;
   fbInto($("#gcfb"),9);if(window.nsCommunityLoad)window.nsCommunityLoad()},
- u(id,el){const me0=me();el.innerHTML='<p class="mute">Loading profile...</p>';api("/profiles/"+encodeURIComponent(id)+(me0?"?viewer="+me0.id:"")).then(p=>{
+ u(id,el){const me0=me(),at=cur;el.innerHTML='<p class="mute">Loading profile...</p>';api("/profiles/"+encodeURIComponent(id)+(me0?"?viewer="+me0.id:"")).then(p=>{if(!el.isConnected||cur!==at)return;
   el.innerHTML=`${p.banner?`<div class="gcover" style="aspect-ratio:${clampAR(p.banner_ar)}"><img src="${esc(p.banner)}" alt="" data-testid="public-profile-banner"></div>`:`<div class="cover" style="--c1:#0b3b45;--c2:#b38b1d"></div>`}<div class="phead" style="--acc:${esc(p.accent)}">${p.avatar?`<img class="gav" src="${esc(p.avatar)}" alt="">`:`<div class="av">${esc((p.name[0]||"?").toUpperCase())}</div>`}<div><h1 style="font:700 34px Newsreader,serif;margin:0" data-testid="public-profile-name">${esc(p.name)}</h1>${p.tagline?`<div class="gtagline">${esc(p.tagline)}</div>`:""}${p.show_badges&&p.badges.length?`<div class="gbadges" data-testid="public-profile-badges">${p.badges.map(b=>`<span class="tag">${esc(b)}</span>`).join("")}</div>`:""}<p class="mute">${esc(p.bio)||"No bio yet."}</p></div></div>
   <div class="stats"><div><b id="gfc">${p.followers}</b>Followers</div><div><b>${p.following}</b>Following</div><div><b id="glc">${p.likes}</b>Likes</div></div>
   ${me0&&me0.id===p.id?'<p><a class="btn alt" href="#profile/settings">Edit my profile</a></p>':`<div class="gsoc"><button class="btn" id="gfol" data-testid="follow-button">${p.viewer_follows?"Following":"Follow"}</button><button class="btn alt" id="glik" data-testid="like-button">${p.viewer_likes?"Liked":"Like"}</button></div>`}`;
   const act=k=>{const u=me();if(!u){pend={go:cur};say("Log in to "+k+".");go("login");return}(u.synced?Promise.resolve():sync(u)).then(()=>api(`/profiles/${encodeURIComponent(id)}/${k}`,P({from_id:u.id},{"X-Profile-Token":ptok(u)}))).then(r=>{$("#gfc").textContent=r.followers;$("#glc").textContent=r.likes;$("#gfol").textContent=r.viewer_follows?"Following":"Follow";$("#glik").textContent=r.viewer_likes?"Liked":"Like"}).catch(e=>say(e.message))};
-  const f=$("#gfol");if(f){f.onclick=()=>act("follow");$("#glik").onclick=()=>act("like")}}).catch(()=>{el.innerHTML='<p>This profile could not be loaded (it may be private or your connection dropped). <a href="javascript:location.reload()">Try again</a> &middot; <a href="#community">Back to Community</a></p>'})},
+  const f=$("#gfol");if(f){f.onclick=()=>act("follow");$("#glik").onclick=()=>act("like")}}).catch(()=>{if(!el.isConnected||cur!==at)return;el.innerHTML='<p>This profile could not be loaded (it may be private or your connection dropped). <a href="javascript:location.reload()">Try again</a> &middot; <a href="#community">Back to Community</a></p>'})},
  help(a,el){el.innerHTML=`${pageHero("Help Center","Answers about accounts, profiles, song ID, broadcasts and finding your way around.","#0b3b45")}<div class="row"><input id="ghq" placeholder="Search help, for example: forgot password" style="max-width:420px" data-testid="help-search-input"><button class="btn" id="gha" data-testid="help-ask-button">Ask the Help Desk</button></div><div id="ghl" data-testid="help-articles"></div>`;
   const CATS={account:"Accounts & profiles",site:"Using the site",troubleshooting:"Troubleshooting",support:"Support & contact"};let all=[];const d=()=>{const qi=$("#ghq"),hl=$("#ghl");if(!qi||!hl||!el.isConnected)return;const q=qi.value.toLowerCase();hl.innerHTML=Object.keys(CATS).map(c=>{const L=all.filter(e=>e.cat===c&&(!q||(e.title+e.body).toLowerCase().includes(q)));return L.length?`<h2>${CATS[c]}</h2>${L.map(e=>`<details><summary>${esc(e.title)}</summary><p>${linkify(e.body)}</p></details>`).join("")}`:""}).join("")||'<p class="mute">No match. Ask the Help Desk.</p>'};
   const FB=()=>{try{return kbAll()}catch(e){return[]}};api("/kb").then(L=>{all=Array.isArray(L)&&L.length?L:FB();d()}).catch(()=>{all=FB();if(all.length)d();else{const h=$("#ghl");if(h&&el.isConnected)h.innerHTML='<p class="mute">Help articles could not load.</p>'}});$("#ghq").oninput=d;$("#gha").onclick=()=>openChat($("#ghq").value.trim()||"Hi")},
@@ -1991,7 +1991,7 @@ const POL=/\b(elections?|campaigns?|candidates?|senate|senators?|congress(man|wo
 const RUM=/\b(rumou?rs?|reportedly|allegedly|sources say|insiders?|speculat\w*|leak(ed|s)?|unconfirmed|fans think|could be|might be)\b/i,ANN=/\b(announce[sd]?|confirm(s|ed)?|officially|renew(s|ed)?|premiere date|sets|set for|trailer|releases?|released)\b/i;
 const label=t=>RUM.test(t)?"Unconfirmed":ANN.test(t)?"Announced":"Developing";
 const COV=[["streaming","Streaming & Platforms",'(Netflix OR Hulu OR "Disney+" OR Peacock OR "HBO Max" OR "Prime Video" OR "Paramount+" OR "Apple TV+")'],["tvmovies","Television & Movies",'(("TV series" OR television OR movie OR film) AND (renewed OR canceled OR premiere OR trailer OR "box office" OR casting))'],["music","Music & Entertainment",'(album OR single OR tour OR "music video" OR "record label")'],["celeb","Celebrity & Pop Culture",'(celebrity OR "red carpet" OR "pop culture" OR interview)'],["gaming","Gaming & Technology",'("video game" OR PlayStation OR Xbox OR Nintendo OR "PC gaming")'],["life","Lifestyle & Human Interest",'(lifestyle OR inspirational OR "family activities" OR "community")'],["science","Science, Nature & Discovery",'(NASA OR astronomy OR wildlife OR "scientific discovery")'],["trending","Trending & Viral",'(viral OR trending OR "social media")'],["books","Books & Publishing",'("new book" OR novel OR author OR audiobook OR "book adaptation")']];
-let gdAt=0;const gdQ=[];function gd(q){const k="gdw:"+q,c=DB.get(k,null);if(c&&now()-c.t<18e5)return Promise.resolve(c.a);return new Promise(res=>{gdQ.push(async()=>{const w=Math.max(0,gdAt+5400-now());if(w)await new Promise(r=>setTimeout(r,w));gdAt=now();let a=[];try{const r=await _f("https://api.gdeltproject.org/api/v2/doc/doc?query="+encodeURIComponent(q+" sourcelang:english")+"&mode=artlist&maxrecords=40&format=json&sort=datedesc&timespan=3d");if(r.ok){const j=await r.json();a=(j.articles||[]).filter(x=>/^https?:/.test(x.url||"")).map(x=>({t:String(x.title||"").trim(),u:x.url.replace(/^http:/,"https:"),d:x.domain,at:x.seendate}))}}catch(e){}if(a.length)DB.set(k,{t:now(),a});res(a)});if(gdQ.length===1)(async()=>{while(gdQ.length){await gdQ[0]();gdQ.shift()}})()})}
+let gdAt=0,gdBad=0;const gdQ=[];function gd(q){const k="gdw:"+q,c=DB.get(k,null);if(c&&now()-c.t<18e5)return Promise.resolve(c.a);if(gdBad&&now()-gdBad<3e5)return Promise.resolve([]);return new Promise(res=>{gdQ.push(async()=>{const bad=gdBad&&now()-gdBad<3e5,w=bad?0:Math.max(0,gdAt+5400-now());if(w)await new Promise(r=>setTimeout(r,w));gdAt=now();let a=[];const ctl=typeof AbortController==="function"?new AbortController():null,tm=ctl?setTimeout(()=>{try{ctl.abort()}catch(e){}},5000):0;try{const r=await _f("https://api.gdeltproject.org/api/v2/doc/doc?query="+encodeURIComponent(q+" sourcelang:english")+"&mode=artlist&maxrecords=40&format=json&sort=datedesc&timespan=3d",ctl?{signal:ctl.signal}:undefined);if(r.ok){const j=await r.json();a=(j.articles||[]).filter(x=>/^https?:/.test(x.url||"")).map(x=>({t:String(x.title||"").trim(),u:x.url.replace(/^http:/,"https:"),d:x.domain,at:x.seendate}))}}catch(e){gdBad=now()}if(tm)clearTimeout(tm);if(a.length){gdBad=0;DB.set(k,{t:now(),a})}else DB.set(k,{t:now()-18e5+12e4,a:[]});res(a)});if(gdQ.length===1)(async()=>{while(gdQ.length){await gdQ[0]();gdQ.shift()}})()})}
 function clean(L){const out=[],toks=t=>new Set(t.toLowerCase().replace(/[^a-z0-9 ]/g," ").split(/\s+/).filter(w=>w.length>3));let dropP=0,dropD=0;L.forEach(x=>{if(!x.t||x.t.length<12)return;if(POL.test(x.t)){dropP++;return}const A=toks(x.t);const dup=out.some(y=>{const B=y.k;let i=0;A.forEach(w=>{if(B.has(w))i++});return i/(A.size+B.size-i||1)>=.6});if(dup){dropD++;return}x.k=A;x.l=label(x.t);out.push(x)});out.dropP=dropP;out.dropD=dropD;return out}
 const wire=(q)=>gd(q).then(clean);
 const briefCard=x=>`<a class="card" href="${esc(x.u)}" target="_blank" rel="noopener noreferrer nofollow" style="display:block"><span class="tag ${x.l==="Announced"?"n":x.l==="Unconfirmed"?"c":""}">${x.l}</span><h3 style="font:700 19px/1.25 Newsreader,serif;margin:8px 0 4px">${esc(x.t)}</h3><div class="mute">${esc(x.d)}</div></a>`;
@@ -2121,8 +2121,8 @@ let lt=0;new MutationObserver(()=>{clearTimeout(lt);lt=setTimeout(()=>{if(lang!=
 const A=Object.assign({fs:100,hc:0,dk:0,rm:0,ul:0},DB.get("a11y",{}));
 function a11y(){document.documentElement.style.fontSize=A.fs+"%";const c=document.documentElement.classList;c.toggle("ghc",!!A.hc);c.toggle("gdk",!!A.dk);c.toggle("grm",!!A.rm);c.toggle("gul",!!A.ul);DB.set("a11y",A)}
 /* ===== menu, language picker, accessibility panel ===== */
-const MENU=[["News",[["news","News"],["coverage","Coverage Hub"],["weather","Weather Watch"],["tracker","Tracker"],["live","Live & Broadcast"]]],["Streaming & TV",[["streamers","Streaming News"],["guide","TV Guide"],["shows","TV Shows"],["networks","Networks"],["chicago","One Chicago"],["free","Free to Watch"],["streaming","Streaming Guide"]]],["Movies & Music",[["movies","Movies"],["artists","Artists"],["identify","Identify a Song"]]],["Community",[["community","Community"],["help","Help Center"],["write","Write a story"],["plans","Plans & Credits"]]],["About",[["desks","Our Desks"],["neutrality","Coverage and Neutrality"],["contact","Contact"],["status","System Status"]]]];
-function nav(){const n=$("#nav");if(!n)return;const P=[["home","Home"],["news","News"],["coverage","Coverage Hub"],["streamers","Streaming News"],["guide","TV Guide"],["shows","TV Shows"],["movies","Movies"],["artists","Artists"],["weather","Weather Watch"],["live","Live"],["ondemand","On-Demand"]];n.innerHTML=P.map(p=>`<a href="#${p[0]}" class="${cur.split("/")[0]===p[0]||(p[0]==="home"&&!cur)?"on":""}">${p[1]}</a>`).join("")+`<button class="gmb" id="gmb" aria-expanded="false" aria-controls="gmp" data-testid="menu-button">Menu</button>`;
+const MENU=[["News",[["news","News"],["coverage","Coverage Hub"],["weather","Weather Watch"],["tracker","Tracker"],["live","Live & Broadcast"]]],["Streaming & TV",[["streamers","Streaming News"],["videos","Video Hub"],["guide","TV Guide"],["shows","TV Shows"],["networks","Networks"],["chicago","One Chicago"],["free","Free to Watch"],["streaming","Streaming Guide"]]],["Movies & Music",[["movies","Movies"],["artists","Artists"],["identify","Identify a Song"]]],["Community",[["community","Community"],["help","Help Center"],["write","Write a story"],["plans","Plans & Credits"]]],["About",[["desks","Our Desks"],["neutrality","Coverage and Neutrality"],["contact","Contact"],["status","System Status"]]]];
+function nav(){const n=$("#nav");if(!n)return;const P=[["home","Home"],["news","News"],["coverage","Coverage Hub"],["streamers","Streaming News"],["guide","TV Guide"],["shows","TV Shows"],["movies","Movies"],["videos","Video Hub"],["artists","Artists"],["weather","Weather Watch"],["live","Live"],["ondemand","On-Demand"]];n.innerHTML=P.map(p=>`<a href="#${p[0]}" class="${cur.split("/")[0].split("?")[0]===p[0]||(p[0]==="home"&&!cur)?"on":""}">${p[1]}</a>`).join("")+`<button class="gmb" id="gmb" aria-expanded="false" aria-controls="gmp" data-testid="menu-button">Menu</button>`;
  let p=$("#gmp");if(!p){p=document.createElement("div");p.id="gmp";p.hidden=true;document.body.appendChild(p)}
  const adm=isAdmin(me());p.innerHTML=`<div class="gmg">${MENU.concat(adm?[["Admin",[["admin","Admin panel (TV network, live, ads, users)"],["command","Command Center"]]]]:[]).map(g=>`<div><h4>${g[0]}</h4>${g[1].map(x=>`<a href="#${x[0]}">${x[1]}</a>`).join("")}</div>`).join("")}</div>`;
  $("#gmb").onclick=()=>{p.hidden=!p.hidden;$("#gmb").setAttribute("aria-expanded",String(!p.hidden))};p.onclick=e=>{if(e.target.closest("a"))p.hidden=true};
@@ -3423,7 +3423,7 @@ window.NSImport={parse:parseMsg};window.NSSched=sched;
 .nsp{position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-height:220px;background:#05080a;color:#fff;font:600 13px 'Bricolage Grotesque',system-ui,sans-serif}
 .nsp .nsv{position:relative;flex:1;min-height:0;background:#000}.nsp .nsv iframe{position:absolute;inset:0;width:100%;height:100%;border:0}.nsv video{position:absolute;inset:0;width:100%;height:100%;background:#000;object-fit:contain}
 .nsp .nss{position:absolute;inset:0;z-index:2}.nsp.vod .nss{cursor:pointer}
-.nsp .nsl{position:absolute;inset:0;z-index:3;display:grid;place-items:center;text-align:center;padding:16px;background:radial-gradient(120% 140% at 50% 0%,#0f4652,#071d24 70%);color:#f0d68a}.nsp .nsl[hidden]{display:none}
+.nsp .nsl{position:absolute;inset:0;z-index:3;display:grid;place-items:center;text-align:center;padding:16px;background:radial-gradient(120% 140% at 50% 0%,#0f4652,#071d24 70%);color:#f0d68a}.nsp .nsl[hidden]{display:none}.nsp .nsl.slim{background:linear-gradient(0deg,rgba(7,29,36,.94),rgba(7,29,36,0));place-items:end center;pointer-events:none;padding:10px}.nsp .nsl.slim>div{pointer-events:auto;background:#071d24;border:1px solid rgba(212,175,55,.5);border-radius:12px;padding:10px 14px;max-width:94%;font-size:13px}
 .nsp .nsc{flex:none;display:flex;flex-direction:column;gap:6px;padding:8px 12px 10px;background:linear-gradient(#0b2a33,#071d24);border-top:2px solid #d4af37}
 .nsp .r{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.nsp .r b{font-size:14px}.nsp .mu{color:#9fb4b8}
 .nsp button{background:#1d3b45;color:#fff;border:1px solid #2f5662;border-radius:6px;padding:7px 11px;font:600 13px inherit;cursor:pointer;min-height:36px}.nsp button:hover:not(:disabled),.nsp button:focus-visible{background:#d4af37;color:#111}.nsp button:disabled{opacity:.4;cursor:default}
@@ -3540,16 +3540,16 @@ function mountNative(box,o){
  v.onplaying=()=>{S.s=1;q(".nsl").hidden=true};v.onpause=()=>{if(!v.ended)S.s=2};v.onwaiting=()=>{S.s=3};
  v.onended=()=>{S.s=0;if(!ended){ended=true;o.onEnd&&o.onEnd(S.d)}};
  v.onvolumechange=()=>{S.mu=v.muted};
- v.onerror=()=>{q("[data-lt]").textContent="This file can't be played right now. It may have been removed from Internet Archive.";q(".nsl").hidden=false;const g=q('[data-a="go"]');if(g)g.hidden=true;window.NSDIAGnote&&window.NSDIAGnote("archive media error: "+o.src)};
+ v.onerror=()=>{q("[data-lt]").textContent="This file can't be played right now. It may have been removed from Internet Archive, or this device may not support the format.";q(".nsl").hidden=false;q(".nsl").classList.remove("slim");const g=q('[data-a="go"]');if(g){g.hidden=false;g.textContent="Try again"}window.NSDIAGnote&&window.NSDIAGnote("archive media error: "+o.src)};
  nsSetSrc(v,o.src,o);
- const A={chup:()=>{},chdn:()=>{},mute:inst.mute,pp:inst.toggle,b10:()=>inst.skip(-10),f10:()=>inst.skip(10),rs:inst.restart,golive:inst.goLive,prev:inst.prev,next:inst.next,cc:inst.cc,fs:inst.fs,go:()=>{play();if(!muted)v.muted=false}};
+ const A={chup:()=>{},chdn:()=>{},mute:inst.mute,pp:inst.toggle,b10:()=>inst.skip(-10),f10:()=>inst.skip(10),rs:inst.restart,golive:inst.goLive,prev:inst.prev,next:inst.next,cc:inst.cc,fs:inst.fs,go:()=>{if(v.error){try{v.load()}catch(e){}}play();if(!muted)v.muted=false}};
  R.addEventListener("click",e=>{const b=e.target.closest("button[data-a]");if(b&&A[b.dataset.a])A[b.dataset.a]();if(e.target.closest(".nss"))inst.toggle()});
  q("[data-v]").oninput=e=>setVol(+e.target.value);
  const bar=q("[data-bar]");if(bar){const at=e=>{const r=bar.getBoundingClientRect();inst.seek(Math.max(0,Math.min(1,(e.clientX-r.left)/r.width))*(S.d||o.dur||0))};let dn=false;bar.onpointerdown=e=>{dn=true;bar.setPointerCapture(e.pointerId);at(e)};bar.onpointermove=e=>{if(dn)at(e)};bar.onpointerup=()=>{dn=false}}
  function draw(){const m=q('[data-a="mute"]'),vv=q("[data-v]"),mh=muted?"&#128263; Muted":"&#128266; Sound";if(m&&m.__h!==mh){m.__h=mh;m.innerHTML=mh}const val=String(muted?0:vs.v);if(vv&&vv.value!==val&&document.activeElement!==vv)vv.value=val;const pp=q('[data-a="pp"]'),pt=S.s===1?"Pause":"Play";if(pp&&pp.textContent!==pt)pp.textContent=pt;
   if(dvr){const lag=S.got?Math.max(0,(Date.now()-o.startMs)/1e3-S.t):0,beh=lag>8,lg=q("[data-lag]"),gl=q('[data-a="golive"]'),lb=q("[data-badge]");if(lg){const t=beh?"Behind live by "+tf(lag):"";if(lg.textContent!==t)lg.textContent=t}if(gl&&gl.hidden===beh)gl.hidden=!beh;if(lb){const t=beh?"\u25F7 DELAYED":"\u25CF LIVE";if(lb.textContent!==t)lb.textContent=t}}}
  const iv=setInterval(()=>{if(!alive)return;if(!box.isConnected||box._nsp!==inst){inst.destroy();return}
-  const playing=S.s===1||S.t>0.5;if(playing&&!q(".nsl").hidden)q(".nsl").hidden=true;
+  const playing=S.s===1||S.t>0.5;{const nl=q(".nsl");if(playing){if(!nl.hidden){nl.hidden=true;nl.classList.remove("slim")}}else if(!nl.hidden&&Date.now()-t0>6000)nl.classList.add("slim")}
   if(!playing&&Date.now()-t0>20000&&!S.got)q("[data-lt]").textContent="The file did not respond. It may have been removed, or this device is offline.";
   draw();const d=S.d||o.dur||0;q("[data-p]").style.width=d?Math.min(100,S.t/d*100)+"%":"0";q("[data-e]").textContent=tf(S.t);q("[data-r]").textContent="-"+tf(d-S.t);
   if(S.got&&Date.now()-lastP>5000&&S.t>0){lastP=Date.now();o.onProgress&&o.onProgress(S.t,S.d)}},250);
@@ -3593,7 +3593,7 @@ function mount(box,o){
  let lastP=0,ended=false,badSince=0,lastPlay=0,drift=0,seeks=0;
  const iv=setInterval(()=>{if(!alive)return;if(!box.isConnected||box._nsp!==inst){inst.destroy();return}
   if(!S.got&&Date.now()-t0<8000&&tries++%4===0)listen();
-  const playing=S.s===1||S.t>0.5;if(playing&&!q(".nsl").hidden)q(".nsl").hidden=true;
+  const playing=S.s===1||S.t>0.5;{const nl=q(".nsl");if(playing){if(!nl.hidden){nl.hidden=true;nl.classList.remove("slim")}}else if(!nl.hidden&&Date.now()-t0>6000)nl.classList.add("slim")}
   if(!playing){const dt=Date.now()-t0;if(dt>4000&&S.got)q('[data-a="go"]').hidden=false;if(dt>15000&&!S.got){q("[data-lt]").textContent="The video did not respond. It may be blocked from embedding, this device may be offline, or YouTube may be asking you to verify you are not a bot (sign in to YouTube in this browser, then reload).";q(".nsl").hidden=false;ytLink(R,o.id)}if(dt>25000&&S.got&&S.s!==1&&!document.hidden&&GEST){q("[data-lt]").textContent="Playback has not started. Press Start playback. If YouTube shows a sign-in or bot check, open the video on YouTube once, then come back.";q(".nsl").hidden=false;ytLink(R,o.id)}}
   draw();
   if(S.d>0&&o.lib&&!o.ytlive&&!inst.hl){inst.hl=1;try{const m=X.D.get("rtseen",{});if(m[o.lib]!==S.d){m[o.lib]=S.d;X.D.set("rtseen",m)}}catch(e){}}
@@ -4793,7 +4793,7 @@ const adMin=v=>{const m=/^(\d{1,2}):(\d{2})$/.exec(v||"");return m?+m[1]*60+ +m[
 const adPL=()=>{const v=XN().D.get("ns_adpl",null);return v&&Array.isArray(v.playlists)?v.playlists:[]};
 function adsHTML(){const X=XN();if(!X)return card("Advertising","<p class='err'>Engine not loaded.</p>");const L=X.lib(),A=L.filter(x=>x.type==="commercial"),P=adPL(),C=X.chans(),e=AD.ed==null?null:(AD.ed===-1?{name:"",from:"",to:"",items:[]}:P[AD.ed]),inp="background:#241e18;border:1px solid #42382c;color:inherit;border-radius:8px;padding:7px 10px",sp=C.filter(c=>c.n===3||c.n===4),brk=C.reduce((a,c)=>a+X.slots(c.n).filter(s=>s.adbrk).length,0),AZ=DB.get("adsense",{})||{};
  return`<div class="cards"><div class="c g"><b>${A.length}</b><span>Commercials (${A.filter(x=>!x.adOff&&X.schedulable(x)).length} can air)</span></div><div class="c"><b>${P.length}</b><span>Playlists</span></div><div class="c"><b>${brk}</b><span>Break slots scheduled</span></div></div>
- <div class="c" style="margin-bottom:14px;border-color:#d4af37"><h3 style="margin:0 0 8px">Google AdSense (home page money)</h3><p class="mute" style="max-width:80ch">The two home-page ad slots load Google's paid ads when these three values are filled. Google pays the AdSense account that owns this publisher ID. The site does not get paid per API call; it is paid per ad shown or clicked, after Google approves the site and the account has payout details.</p><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px"><input id="adsc" placeholder="Publisher ID: ca-pub-0000000000000000" value="${E(AZ.client||"")}" style="${inp}"><input id="adss1" placeholder="Home ad slot 1 ID" value="${E(AZ.slot1||"")}" style="${inp}"><input id="adss2" placeholder="Home ad slot 2 ID" value="${E(AZ.slot2||"")}" style="${inp}"></div><p style="margin:10px 0 0"><button class="btn" id="adssav">Save Google ad settings</button> <span class="mute" id="adsm"></span></p><p class="mute" style="margin:8px 0 0">Where to get them: adsense.google.com &gt; Sites &gt; add this site &gt; Ads &gt; By ad unit &gt; Display. The home slots sit under the top broadcast row. Leave the fields blank to keep the "Advertise with us" cards.</p></div>
+ <div class="c" style="margin-bottom:14px;border-color:#d4af37"><h3 style="margin:0 0 8px">Google AdSense (home page money)</h3><p class="mute" style="max-width:80ch">The two home-page ad slots load Google's paid ads when these three values are filled. Google pays the AdSense account that owns this publisher ID. The site does not get paid per API call; it is paid per ad shown or clicked, after Google approves the site and the account has payout details.</p><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px"><input id="adsc" placeholder="Publisher ID: ca-pub-0000000000000000" value="${E(AZ.client||"")}" style="${inp}"><input id="adss1" placeholder="Home ad slot 1 ID" value="${E(AZ.slot1||"")}" style="${inp}"><input id="adss2" placeholder="Home ad slot 2 ID" value="${E(AZ.slot2||"")}" style="${inp}"></div><p style="margin:10px 0 0"><button class="btn" id="adssav">Save Google ad settings</button> <span class="mute" id="adsm"></span></p><p class="mute" style="margin:8px 0 0">Where to get them: adsense.google.com &gt; Sites &gt; add this site &gt; Ads &gt; By ad unit &gt; Display. The home slots sit under the top broadcast row. Leave the fields blank to keep the "Advertise with us" cards.</p><p style="margin:10px 0 0"><button type="button" class="btn alt" onclick="NSADSDOWNLOAD()">Download ads.txt</button> <span class="mute">Upload the file to the top folder of the site so Google can verify your seller record.</span></p></div>
  <div class="c" style="margin-bottom:14px"><h3 style="margin:0 0 8px">Rules</h3><p>Free viewers see NorthStar commercials in Live TV breaks. Paid subscribers see none. On-Demand never shows NorthStar ads. YouTube's own ads are not touched.</p><p class="mute">${sp.length?sp.map(c=>E(c.n+" "+c.name)).join(" &middot; "):"Channels 3 (Sponsor Spotlight) and 4 (Advertiser Showcase) are not in the lineup."} Schedule sponsor content on them in Global Scheduler. Playback of an ad is not verified by this page.</p>${AD.msg?`<p style="color:${AD.bad?"#ffb4b4":"#9fd694"}">${E(AD.msg)}</p>`:""}<button class="btn s" id="adpub">Publish lineup to viewers</button></div>
  <div class="c" style="margin-bottom:14px"><h3 style="margin:0 0 8px">Add a commercial</h3><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px"><input id="adt" placeholder="Sponsor / ad title" style="${inp}"><input id="ady" placeholder="YouTube link or ID" style="${inp}"><input id="adm" type="number" min="0.1" step="0.1" placeholder="Length (minutes)" style="${inp}"><label><input type="checkbox" id="adr"> I own or am licensed to air this</label></div><p><button class="btn" id="adadd">Add commercial</button></p></div>
  <div class="c" style="margin-bottom:14px"><h3 style="margin:0 0 8px">Commercials</h3><div style="overflow-x:auto"><table><tr><th>Art</th><th>Title</th><th>Min</th><th>Rights</th><th>Status</th><th></th></tr>${A.map(x=>`<tr><td>${art(x)?`<img src="${E(art(x))}" alt="" width="56" height="32" style="border-radius:6px;object-fit:cover">`:""}</td><td>${E(x.title)}</td><td>${E(x.dur||"")}</td><td>${E((X.RIGHTS||{})[x.rights]||x.rights||"")}</td><td><span class="pill ${x.adOff||!X.schedulable(x)?"x":""}">${x.adOff?"Paused":X.schedulable(x)?"Ready":"Cannot air yet"}</span></td><td><button class="btn s" data-adp="${E(x.id)}">${x.adOff?"Resume":"Pause"}</button></td></tr>`).join("")||'<tr><td colspan="6">No commercials yet.</td></tr>'}</table></div></div>
@@ -6337,5 +6337,279 @@ addEventListener("hashchange",function(){setTimeout(function(){fill(root())},150
  }catch(e){console.error(e)}
 })();
 </script>
+<style id="ns-hub-skin">
+.vhub-hero{background:radial-gradient(120% 140% at 0% 0%,#0f4652,#061a20 70%);color:#f2ede1;border-radius:18px;padding:26px 24px;margin-top:10px}
+.vhub-hero h1{font:700 clamp(30px,4.4vw,46px)/1.05 'Newsreader',serif;margin:6px 0 8px;color:#fff}
+.vhub-hero p{margin:0;color:#c9d6d2;max-width:70ch}
+.vhub-hero .tag{background:#d4af37;color:#171310}
+.vhub-bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:16px 0 8px}
+.vhub-bar input{flex:1;min-width:220px;max-width:420px}
+.vhub-chips{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 16px}
+.vhub-chips button{border:1px solid var(--line);background:#fff;border-radius:99px;padding:7px 15px;cursor:pointer;font:600 13px 'Bricolage Grotesque',sans-serif;color:var(--ink)}
+.vhub-chips button.on{background:#0b3b45;color:#f0d68a;border-color:#0b3b45}
+.vhub-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+.vhub-card{display:flex;flex-direction:column;text-align:left;border:1px solid var(--line);border-radius:14px;background:#fff;padding:0;overflow:hidden;cursor:pointer;color:var(--ink);font:inherit}
+.vhub-card:hover{box-shadow:0 12px 26px rgba(0,0,0,.12);transform:translateY(-2px)}
+.vhub-card .th{aspect-ratio:16/9;display:grid;place-items:center;background:linear-gradient(145deg,#0b2a33,#123c46);color:#f0d68a;font-size:30px}
+.vhub-card .bd{padding:10px 12px 12px}
+.vhub-card b{display:block;font:700 15px/1.3 'Bricolage Grotesque',sans-serif;margin-bottom:4px}
+.vhub-card small{color:#6b6b6b}
+.vhub-card .tag{margin-bottom:6px}
+#vhub-play{margin:18px 0;scroll-margin-top:20px}
+#vhub-play[hidden]{display:none}
+.vhub-note{font-size:13px;color:#6b6b6b;line-height:1.55}
+.ns-cast-state{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#e2c25a;margin-left:4px}
+.nsr-sec{margin:22px 0 0}
+.nsr-sec h2{font:700 24px/1.2 'Newsreader',serif;margin:0 0 10px}
+.nsr-empty{border:1px dashed var(--line);border-radius:14px;padding:18px;color:#6b6b6b}
+</style>
+<script id="ns-video-hub">
+"use strict";
+(function(){
+  var VX=null;
+  try{VX=window.NSX||null}catch(e){}
+  function safe(f,d){try{return f()}catch(e){return d}}
+  function esc2(v){try{return esc(String(v==null?"":v))}catch(e){return String(v==null?"":v).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}}
+  function qstr(){try{var h=(window.NSH&&NSH())||"",i=h.indexOf("?");return new URLSearchParams(i<0?"":h.slice(i+1))}catch(e){return new URLSearchParams("")}}
+  function ytid(v){try{return yid(v)}catch(e){return ""}}
+  function nsvid(){try{return window.NSPlay}catch(e){return null}}
+
+  /* ---------- casting: Remote Playback (Chromecast / Google TV / AirPlay) ---------- */
+  var CAST=(function(){
+    var state={device:"",on:false,busy:false};
+    function say2(m){try{say(m)}catch(e){}}
+    function supported(v){return !!(v&&(v.remote||typeof v.webkitShowPlaybackTargetPicker==="function"))}
+    function attach(video,box){
+      if(!video||!box)return null;
+      if(!supported(video))return null;
+      if(video.__nscast)return video.__nscast;
+      video.setAttribute("x-webkit-airplay","allow");
+      try{video.disableRemotePlayback=false}catch(e){}
+      var row=box.querySelector(".nsc .r:last-child")||box.querySelector(".nsc");
+      if(!row)return null;
+      if(row.querySelector("[data-nscast]"))return video.__nscast||null;
+      var b=document.createElement("button");
+      b.type="button";b.dataset.nscast="1";b.textContent="Cast";b.style.minWidth="66px";
+      b.title=video.remote?"Send this video to a Chromecast, Google TV or Android TV":"Choose an AirPlay device";
+      var st=document.createElement("span");st.className="ns-cast-state";
+      var fs=row.querySelector('[data-a="fs"]');
+      row.insertBefore(b,fs||null);row.insertBefore(st,fs||null);
+      function paint(){
+        var on=video.remote&&video.remote.state==="connected";
+        state.on=!!on;
+        b.textContent=on?"Casting":"Cast";
+        b.style.background=on?"#d4af37":"";
+        b.style.color=on?"#171310":"";
+        st.textContent=on?"ON TV":"";
+        b.title=on?"Playing on your TV. Pause here or use your TV to stop.":(video.remote?"Send this video to a Chromecast, Google TV or Android TV":"Choose an AirPlay device");
+      }
+      if(video.remote){
+        try{
+          video.remote.addEventListener("connecting",function(){b.textContent="Connecting...";st.textContent=""});
+          video.remote.addEventListener("connect",function(){paint();say2("Casting to your TV.")});
+          video.remote.addEventListener("disconnect",function(){paint();say2("The TV connection ended. Playback is back on this device.")});
+        }catch(e){}
+      }
+      b.onclick=function(){
+        if(video.remote&&video.remote.state==="connected"){
+          try{video.pause()}catch(e){}
+          say2("Paused on the TV. Use your TV or the Cast menu to disconnect.");
+          paint();return;
+        }
+        if(video.remote){
+          b.textContent="Connecting...";
+          video.remote.prompt().then(function(){paint()}).catch(function(e){
+            paint();
+            if(e&&(e.name==="NotAllowedError"||e.name==="AbortError"))say2("No TV was selected. Make sure your phone or computer is on the same Wi-Fi as the TV and try again.");
+            else if(e&&e.name==="NotSupportedError")say2("This video format cannot be cast to that device. Try another title, or open it on the TV's own app.");
+            else say2("Casting could not start"+(e&&e.message?": "+e.message:"."));
+          });
+          return;
+        }
+        if(typeof video.webkitShowPlaybackTargetPicker==="function"){
+          try{video.webkitShowPlaybackTargetPicker();say2("Pick your AirPlay device.")}
+          catch(e){say2("AirPlay is not available for this video.")}
+        }
+      };
+      paint();
+      var api={supported:true,paint:paint,button:b};
+      video.__nscast=api;
+      return api;
+    }
+    return {attach:attach,supported:supported,state:state};
+  })();
+  window.NSCAST=CAST;
+
+  /* add a real Cast button to the native NorthStar player (direct video / Internet Archive) */
+  function hookCast(){
+    var NP=nsvid();
+    if(!NP||NP.__nscastHook)return;
+    var orig=NP.mount;
+    NP.mount=function(box,o){
+      var inst=orig.apply(this,arguments);
+      try{
+        if(o&&o.src){
+          setTimeout(function(){
+            var v=box&&box.querySelector&&box.querySelector("video");
+            if(v&&v.isConnected)CAST.attach(v,box);
+          },30);
+        }
+      }catch(e){}
+      return inst;
+    };
+    NP.__nscastHook=1;
+  }
+  hookCast();
+
+  /* ---------- global search ---------- */
+  V.search=function(a,el){
+    var term=String(a||"");
+    try{term=decodeURIComponent(term)}catch(e){}
+    term=term.trim();
+    var L=term.toLowerCase();
+    var hit=function(){var s=Array.prototype.join.call(arguments," ").toLowerCase();return L&&s.indexOf(L)>=0};
+    el.innerHTML='<section class="phh" style="--pc:#0b3b45"><span class="tag" style="background:#fff;color:#0b3b45">SEARCH</span><h1>Search NorthStar</h1><p>Stories, shows, movies, artists, channels, on-demand titles and videos in one place.</p></section>'+
+      '<form class="vhub-bar" id="nsrf" role="search"><input id="nsq" type="search" aria-label="Search everything" placeholder="Try a show, movie, artist or story" value="'+esc2(term)+'"><button class="btn" type="submit">Search</button></form>'+
+      '<div id="nsr" aria-live="polite"></div>';
+    var form=el.querySelector("#nsrf"),input=el.querySelector("#nsq"),out=el.querySelector("#nsr");
+    form.onsubmit=function(e){e.preventDefault();var v=input.value.trim();if(v)go("search/"+encodeURIComponent(v))};
+    if(!term){
+      var pop=safe(function(){return live().slice(0,4)},[]);
+      out.innerHTML='<p class="mute">Start typing a title, a person or a topic.</p>'+(pop.length?'<div class="nsr-sec"><h2>Latest stories</h2><div class="grid">'+pop.map(storyCard).join("")+'</div></div>':"")+
+        '<p><a class="btn alt" href="#videos">Browse the Video Hub</a> <a class="btn alt" href="#shows">All TV shows</a> <a class="btn alt" href="#movies">All movies</a></p>';
+      return;
+    }
+    var postsHit=safe(function(){return live().filter(function(p){return hit(p.title,p.cat,p.body||"")}).slice(0,8)},[]);
+    var shows=safe(function(){return SHOWS.filter(function(x){return hit(x.t,x.n,x.g,x.f||"")}).slice(0,8)},[]);
+    var films=safe(function(){return FILMS.filter(function(x){return hit(x.t,x.g,x.f||"")}).slice(0,8)},[]);
+    var artists=safe(function(){return ART.filter(function(x){return hit(x.n,x.k)}).slice(0,8)},[]);
+    var channels=safe(function(){return (VX&&VX.chans?VX.chans():[]).filter(function(c){return hit(c.n,c.name)}).slice(0,6)},[]);
+    var vids=safe(function(){return (DB.get("videos",[])||[]).filter(function(v){return hit(v.title,v.id)}).slice(0,6)},[]);
+    var lib=safe(function(){return (VX&&VX.lib?VX.lib():[]).filter(function(x){return hit(x.title,x.syn||"",x.series||"")}).slice(0,8)},[]);
+    var total=postsHit.length+shows.length+films.length+artists.length+channels.length+vids.length+lib.length;
+    var html="";
+    if(!total){out.innerHTML='<div class="nsr-empty"><b>No results for &ldquo;'+esc2(term)+'&rdquo;.</b><p style="margin:6px 0 0">Check the spelling, try a shorter word, or browse <a href="#videos">videos</a>, <a href="#shows">TV shows</a> and <a href="#movies">movies</a>.</p></div>';return}
+    html+='<p class="mute">'+total+' result'+(total===1?"":"s")+' for &ldquo;'+esc2(term)+'&rdquo;</p>';
+    if(postsHit.length)html+='<div class="nsr-sec"><h2>Stories</h2><div class="grid">'+postsHit.map(storyCard).join("")+'</div></div>';
+    if(shows.length)html+='<div class="nsr-sec"><h2>TV shows</h2><div class="grid mg">'+shows.map(function(x){return showTile(x,1)}).join("")+'</div></div>';
+    if(films.length)html+='<div class="nsr-sec"><h2>Movies</h2><div class="grid mg">'+films.map(function(x){return movieCard([x.t])}).join("")+'</div></div>';
+    if(lib.length)html+='<div class="nsr-sec"><h2>On-Demand &amp; videos</h2><div class="vhub-grid">'+lib.map(function(x){return '<a class="vhub-card" href="#videos?q='+encodeURIComponent(x.title||"")+'"><div class="th">&#9654;</div><div class="bd"><span class="tag">'+(x.yt?"YouTube":"Video")+'</span><b>'+esc2(x.title)+'</b><small>'+esc2(x.syn||x.type||"")+'</small></div></a>'}).join("")+'</div></div>';
+    if(artists.length)html+='<div class="nsr-sec"><h2>Artists &amp; actors</h2><div class="vhub-grid">'+artists.map(function(x){return '<a class="vhub-card" href="#artist/'+esc2(x.s)+'"><div class="th">&#9835;</div><div class="bd"><span class="tag">'+esc2(x.k)+'</span><b>'+esc2(x.n)+'</b></div></a>'}).join("")+'</div></div>';
+    if(channels.length)html+='<div class="nsr-sec"><h2>Channels</h2><div class="vhub-grid">'+channels.map(function(c){return '<a class="vhub-card" href="#tv/'+esc2(c.n)+'"><div class="th">&#128250;</div><div class="bd"><b>'+esc2(c.n+" "+(c.name||""))+'</b><small>NorthStar TV channel</small></div></a>'}).join("")+'</div></div>';
+    if(vids.length)html+='<div class="nsr-sec"><h2>Videos</h2><div class="vhub-grid">'+vids.map(function(v){return '<a class="vhub-card" href="#videos?q='+encodeURIComponent(v.title||"")+'"><div class="th">&#9654;</div><div class="bd"><b>'+esc2(v.title)+'</b><small>YouTube</small></div></a>'}).join("")+'</div></div>';
+    out.innerHTML=html;
+    safe(function(){hydrate(el);hydrateWiki(el)},null);
+  };
+
+  /* ---------- video hub (YouTube + Internet Archive + on-demand) ---------- */
+  V.videos=function(a,el){
+    var params=qstr(),term=(params.get("q")||"").trim(),prov=params.get("p")||"all",kind=params.get("t")||"all";
+    var items=[],seen={};
+    function add(it){
+      var key=(it.p||"")+"|"+(it.id||it.src||it.t);
+      if(seen[key])return;seen[key]=1;items.push(it);
+    }
+    safe(function(){
+      (DB.get("videos",[])||[]).forEach(function(v){
+        var id=ytid(v.id||v.title);if(id)add({p:"youtube",t:v.title||"Video",id:id,type:"Video"});
+      });
+    },null);
+    safe(function(){
+      (DB.get("live",[])||[]).forEach(function(e){
+        var id=ytid(e.yt);if(id)add({p:"youtube",t:e.title||"Live session",id:id,type:"Live session",sub:e.guest||""});
+      });
+    },null);
+    safe(function(){
+      (VX&&VX.lib?VX.lib():[]).forEach(function(x){
+        if(!x||!x.title||x.type==="commercial"||!x.rights||x.rights==="pending")return;
+        var id=ytid(x.yt),src=(!id&&x.ia&&VX.iaOk&&VX.iaOk(x))?x.ia.url:"";
+        if(!id&&!src)return;
+        add({p:id?"youtube":"archive",t:x.title,id:id,src:src,type:x.type||"On-Demand",sub:x.syn||"",dur:(+x.dur||0)*60,od:x.id});
+      });
+    },null);
+    var TYPE={movie:"Movie",show:"TV show",episode:"Episode",trailer:"Trailer",special:"Special",music:"Music video"};
+    var PRI={movie:0,special:1,trailer:2,music:3,show:4,episode:5};
+    items.sort(function(a,b){var d=(PRI[a.type]??9)-(PRI[b.type]??9);return d||String(a.t).localeCompare(String(b.t))});
+    var shown=60;
+    var L=term.toLowerCase();
+    var list=items.filter(function(x){
+      if(prov!=="all"&&x.p!==prov)return false;
+      if(kind!=="all"&&x.type!==kind)return false;
+      if(!L)return true;
+      return (x.t+" "+(x.sub||"")+" "+(x.type||"")).toLowerCase().indexOf(L)>=0;
+    });
+    var counts={all:items.length,youtube:items.filter(function(x){return x.p==="youtube"}).length,archive:items.filter(function(x){return x.p==="archive"}).length},tc={all:items.length};
+    items.forEach(function(x){tc[x.type]=(tc[x.type]||0)+1});
+    el.innerHTML='<section class="vhub-hero" data-testid="video-hub"><span class="tag">WATCH</span><h1>Video Hub</h1><p>Movies, trailers, interviews, live sessions and special features in one place. Playback uses the official YouTube embed or the original Internet Archive file, and never rehosts another publisher&rsquo;s video.</p></section>'+
+      '<form class="vhub-bar" id="vhf" role="search"><input id="vhq" type="search" aria-label="Search videos" placeholder="Search videos, trailers, interviews" value="'+esc2(term)+'"><button class="btn" type="submit">Search</button><a class="btn alt" href="#ondemand">NorthStar On-Demand</a><a class="btn alt" href="https://www.youtube.com/@GoodMorningNorthStarNews" target="_blank" rel="noopener noreferrer">Our YouTube channel</a></form>'+
+      '<div class="vhub-chips" id="vhp">'+[["all","All "+counts.all],["youtube","YouTube "+counts.youtube],["archive","Internet Archive "+counts.archive]].map(function(p){return '<button type="button" data-p="'+p[0]+'" class="'+(prov===p[0]?"on":"")+'">'+esc2(p[1])+'</button>'}).join("")+'</div>'+'<div class="vhub-chips" id="vht">'+[["all","All types"],["movie","Movies "+(tc.movie||0)],["show","TV shows "+(tc.show||0)],["episode","Episodes "+(tc.episode||0)],["trailer","Trailers "+(tc.trailer||0)],["special","Specials "+(tc.special||0)],["music","Music "+(tc.music||0)]].map(function(p){return '<button type="button" data-t="'+p[0]+'" class="'+(kind===p[0]?"on":"")+'">'+esc2(p[1])+'</button>'}).join("")+'</div>'+
+      '<div id="vhub-play" hidden></div>'+
+      '<p class="vhub-note" id="vhub-castnote">Casting: titles played from Internet Archive use your browser&rsquo;s built-in Cast button in Chrome or Edge, or the AirPlay picker in Safari on Apple devices. YouTube controls casting for YouTube videos, so open the video on YouTube to cast it to your TV.</p>'+'<details class="vhub-note" style="margin:0 0 18px"><summary><b>Which TVs and devices are supported?</b></summary><ul style="margin:8px 0 0;padding-left:20px"><li><b>Chromecast, Google TV and Android TV:</b> use the Cast button that appears on the player in Chrome or Edge. The TV and the phone or computer must be on the same Wi-Fi.</li><li><b>Samsung Smart TVs (2018 and newer):</b> use AirPlay 2 from an iPhone, iPad or Safari, or Samsung Smart View screen mirroring. Samsung TVs do not use Google Cast, so the Chrome Cast button does not list them.</li><li><b>Roku, Fire TV and other boxes:</b> use screen mirroring from the phone, or the YouTube app for YouTube videos.</li><li><b>YouTube videos:</b> open the video on YouTube and use the Cast icon in YouTube&rsquo;s own player. YouTube does not allow another site to send its videos to a TV.</li><li><b>Not yet available:</b> a dedicated Samsung Tizen or LG webOS app for this site. That needs a registered TV app and a Cast receiver; it is not faked here.</li></ul></details>'+
+      '<div class="vhub-grid" id="vhl" aria-live="polite"></div><div class="row" style="margin-top:14px"><button type="button" class="btn alt" id="vmore" hidden>Show more videos</button></div>';
+    var box=el.querySelector("#vhub-play"),grid=el.querySelector("#vhl"),more=el.querySelector("#vmore");
+    function paint(){
+      grid.innerHTML=list.length?list.slice(0,shown).map(function(x,i){
+        return '<button type="button" class="vhub-card" data-i="'+i+'"><div class="th">&#9654;</div><div class="bd"><span class="tag">'+esc2(x.p==="youtube"?"YouTube":"Internet Archive")+'</span><b>'+esc2(x.t)+'</b><small>'+esc2(TYPE[x.type]||"Video")+'</small></div></button>';
+      }).join(""):'<div class="nsr-empty"><b>No videos match that search.</b><p style="margin:6px 0 0">Try another word, or <a href="#videos">clear the search</a>. Admins can add YouTube videos in the admin console.</p></div>';
+      if(more)more.hidden=shown>=list.length;
+    }
+    if(more)more.onclick=function(){shown+=60;paint()};
+    function play(x){
+      box.hidden=false;
+      var head='<div class="card" style="margin:0 0 8px"><b>'+esc2(x.t)+'</b> <span class="mute">'+esc2(x.sub||x.type||"")+'</span></div>';
+      box.innerHTML=head+'<div id="vhub-mount"></div>';
+      var mount=box.querySelector("#vhub-mount");
+      var NP=nsvid();
+      if(!NP){mount.innerHTML='<p class="mute">The player is still loading. Try again in a moment.</p>';return}
+      try{
+        NP.mount(mount,{mode:"vod",lt:x.type,id:x.id||"",src:x.src||"",title:x.t,sub:x.sub||x.type||"",dur:x.dur||0});
+      }catch(e){mount.innerHTML='<p class="mute">This video could not be started. '+esc2(e.message||"")+'</p>';return}
+      if(x.p==="youtube"){
+        box.insertAdjacentHTML("beforeend",'<p class="vhub-note">Playing from YouTube. To cast this one, use YouTube&rsquo;s own Cast button (open the video on YouTube) &mdash; YouTube does not allow another site to send its videos to a TV. <a href="https://www.youtube.com/watch?v='+encodeURIComponent(x.id)+'" target="_blank" rel="noopener noreferrer">Open on YouTube</a>'+(x.od?' &middot; <a href="#odwatch/'+esc2(x.od)+'">On-Demand page</a>':"")+'</p>');
+      }else{
+        box.insertAdjacentHTML("beforeend",'<p class="vhub-note">Playing the original file from Internet Archive. Use the Cast button in the player controls to send it to a Chromecast, Google TV or AirPlay device on the same Wi-Fi.</p>');
+      }
+      try{box.scrollIntoView({behavior:"smooth",block:"start"})}catch(e){}
+    }
+    grid.onclick=function(e){
+      var b=e.target.closest("[data-i]");if(!b)return;
+      play(list[+b.dataset.i]);
+    };
+    el.querySelector("#vhf").onsubmit=function(e){
+      e.preventDefault();var v=el.querySelector("#vhq").value.trim();
+      go("videos?"+new URLSearchParams(Object.assign({},v?{q:v}:{},prov!=="all"?{p:prov}:{},kind!=="all"?{t:kind}:{})).toString());
+    };
+    el.querySelector("#vhp").onclick=function(e){
+      var b=e.target.closest("[data-p]");if(!b)return;
+      go("videos?"+new URLSearchParams(Object.assign({},term?{q:term}:{},b.dataset.p!=="all"?{p:b.dataset.p}:{},kind!=="all"?{t:kind}:{})).toString());
+    };
+    el.querySelector("#vht").onclick=function(e){
+      var b=e.target.closest("[data-t]");if(!b)return;
+      go("videos?"+new URLSearchParams(Object.assign({},term?{q:term}:{},prov!=="all"?{p:prov}:{},b.dataset.t!=="all"?{t:b.dataset.t}:{})).toString());
+    };
+    paint();
+  };
+
+  /* ads.txt generator: uses the publisher ID saved in the Google AdSense admin box. */
+  window.NSADSDOWNLOAD=function(){
+    var A={};try{A=(typeof CFG!=="undefined"&&CFG.ADSENSE)||DB.get("adsense",{})||{}}catch(e){}
+    var c=String(A.client||"").trim();
+    if(!/^ca-pub-\d{10,}$/.test(c)){try{say("Save a valid ca-pub publisher ID in the Google AdSense box first.")}catch(e){}return}
+    var id=c.replace(/^ca-pub-/,"pub-"),txt="google.com, "+id+", DIRECT, f08c47fec0942fa0\n";
+    try{
+      var b=new Blob([txt],{type:"text/plain"}),u=URL.createObjectURL(b),a=document.createElement("a");
+      a.href=u;a.download="ads.txt";document.body.appendChild(a);a.click();a.remove();
+      setTimeout(function(){URL.revokeObjectURL(u)},2000);
+      try{say("ads.txt downloaded. Upload it to the top folder of goodartiestsnews.com.")}catch(e){}
+    }catch(e){try{say("The download was blocked. Add this line to ads.txt: "+txt.trim())}catch(x){}}
+  };
+
+  /* If the page was opened directly on a new route, draw it with the new implementation. */
+  try{
+    if(/^videos(\/|$|\?)/.test(cur||"")||/^search(\/|$)/.test(cur||""))route();
+  }catch(e){}
+})();
+</script>
+
 </body>
 </html>
