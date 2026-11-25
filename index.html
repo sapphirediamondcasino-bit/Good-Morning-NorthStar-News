@@ -3302,6 +3302,65 @@ const ytHost=()=>{try{const m=DB.get("yt_host","auto");if(m==="plain"||(m==="aut
 const ytOrigin=()=>/^https?:$/.test(location.protocol)?"&origin="+encodeURIComponent(location.origin):"";
 const ytLink=(R,id)=>{const n=R.querySelector(".nsl>div");if(!n||n.querySelector("[data-ytl]"))return;const a=document.createElement("a");a.setAttribute("data-ytl","1");a.href="https://www.youtube.com/watch?v="+encodeURIComponent(id);a.target="_blank";a.rel="noopener noreferrer";a.textContent="Open on YouTube";a.style.cssText="display:inline-block;margin-top:10px;color:#7cc8ff";n.appendChild(a)};
 /* Native player for approved Internet Archive files (plain video/audio file). Same controls, same inst API as the YouTube player. */
+
+/* ===== North Star direct-stream support (HLS + VAST). Added by patch-hls.js ===== */
+function nsLoadScript(src){
+ if(window.__nsScripts&&window.__nsScripts[src])return window.__nsScripts[src];
+ window.__nsScripts=window.__nsScripts||{};
+ return window.__nsScripts[src]=new Promise(function(res,rej){
+  var s=document.createElement("script");s.src=src;s.async=true;
+  s.onload=function(){res(true)};s.onerror=function(){delete window.__nsScripts[src];rej(new Error("load "+src))};
+  document.head.appendChild(s);
+ });
+}
+/* Plays .mp4 directly and .m3u8 through hls.js when the browser cannot do it natively. */
+function nsSetSrc(v,url,o){
+ if(!url)return;
+ var isHls=/\.m3u8(\?|#|$)/i.test(url);
+ if(!isHls||v.canPlayType("application/vnd.apple.mpegurl")){v.src=url;return}
+ if(v._nsHls){try{v._nsHls.destroy()}catch(e){}v._nsHls=null}
+ try{v.removeAttribute("src");v.load()}catch(e){}
+ nsLoadScript("https://cdn.jsdelivr.net/npm/hls.js@1.5.20/dist/hls.min.js").then(function(){
+  if(!window.Hls||!window.Hls.isSupported()){v.src=url;return}
+  var hls=new window.Hls({enableWorker:true,lowLatencyMode:false});
+  v._nsHls=hls;
+  hls.on(window.Hls.Events.ERROR,function(_e,d){
+   if(!d||!d.fatal)return;
+   if(d.type==="networkError"){try{hls.startLoad()}catch(e){}}
+   else if(d.type==="mediaError"){try{hls.recoverMediaError()}catch(e){}}
+   else{
+    try{if(typeof say==="function")say("This stream could not start. The partner CDN may be blocking playback from this domain, or the link has moved.")}catch(e){}
+    try{hls.destroy()}catch(e){}
+   }
+  });
+  hls.loadSource(url);hls.attachMedia(v);
+ }).catch(function(){v.src=url});
+}
+/* Optional pre-roll/mid-roll for direct streams. Any failure leaves the programme playing. */
+function nsVast(v,R,o){
+ try{
+  var tag=o.vast,mid=(o.vastMid&&o.vastMid.length)?o.vastMid.slice():[];
+  var box=document.createElement("div");
+  box.style.cssText="position:absolute;inset:0;z-index:9;background:#000;display:none";
+  (R.querySelector(".nsv")||R).appendChild(box);
+  nsLoadScript("https://imasdk.googleapis.com/js/sdkloader/ima3.js").then(function(){
+   var ima=window.google&&window.google.ima;if(!ima)throw new Error("no-ima");
+   var disp=new ima.AdDisplayContainer(box,v),ld=new ima.AdsLoader(disp),mgr=null;
+   ld.addEventListener(ima.AdsManagerLoadedEvent.Type.ADS_MANAGER_LOADED,function(e){
+    mgr=e.getAdsManager(v);
+    mgr.addEventListener(ima.AdEvent.Type.CONTENT_PAUSE_REQUESTED,function(){box.style.display="block";try{v.pause()}catch(x){}});
+    mgr.addEventListener(ima.AdEvent.Type.CONTENT_RESUME_REQUESTED,function(){box.style.display="none";try{v.play()}catch(x){}});
+    mgr.addEventListener(ima.AdEvent.Type.ALL_ADS_COMPLETED,function(){box.style.display="none";try{v.play()}catch(x){}});
+    try{mgr.init(v.clientWidth||640,v.clientHeight||360,ima.ViewMode.NORMAL);mgr.start()}catch(x){box.style.display="none"}
+   });
+   ld.addEventListener(ima.AdErrorEvent.Type.AD_ERROR,function(){box.style.display="none";try{v.play()}catch(x){}});
+   function req(t){if(!t)return;try{disp.initialize()}catch(x){}var r=new ima.AdsRequest();r.adTagUrl=t;r.linear=true;try{ld.requestAds(r)}catch(x){}}
+   req(tag);
+   if(mid.length)v.addEventListener("timeupdate",function(){while(mid.length&&v.currentTime>=mid[0].at)req(mid.shift().tag)});
+  }).catch(function(){box.style.display="none"});
+ }catch(e){}
+}
+/* ===== end North Star direct-stream support ===== */
 function mountNative(box,o){
  const vs=DB.get("ns_vol",{v:80,m:false});let muted=!GEST||vs.m,alive=true,ended=false,t0=Date.now(),lastP=0;
  const dvr=o.dvr&&!o.nodvr&&o.startMs;
@@ -3339,7 +3398,7 @@ function mountNative(box,o){
  v.onended=()=>{S.s=0;if(!ended){ended=true;o.onEnd&&o.onEnd(S.d)}};
  v.onvolumechange=()=>{S.mu=v.muted};
  v.onerror=()=>{q("[data-lt]").textContent="This file can't be played right now. It may have been removed from Internet Archive.";q(".nsl").hidden=false;const g=q('[data-a="go"]');if(g)g.hidden=true;window.NSDIAGnote&&window.NSDIAGnote("archive media error: "+o.src)};
- v.src=o.src;
+ nsSetSrc(v,o.src,o);
  const A={chup:()=>{},chdn:()=>{},mute:inst.mute,pp:inst.toggle,b10:()=>inst.skip(-10),f10:()=>inst.skip(10),rs:inst.restart,golive:inst.goLive,prev:inst.prev,next:inst.next,cc:inst.cc,fs:inst.fs,go:()=>{play();if(!muted)v.muted=false}};
  R.addEventListener("click",e=>{const b=e.target.closest("button[data-a]");if(b&&A[b.dataset.a])A[b.dataset.a]();if(e.target.closest(".nss"))inst.toggle()});
  q("[data-v]").oninput=e=>setVol(+e.target.value);
@@ -3351,7 +3410,7 @@ function mountNative(box,o){
   if(!playing&&Date.now()-t0>20000&&!S.got)q("[data-lt]").textContent="The file did not respond. It may have been removed, or this device is offline.";
   draw();const d=S.d||o.dur||0;q("[data-p]").style.width=d?Math.min(100,S.t/d*100)+"%":"0";q("[data-e]").textContent=tf(S.t);q("[data-r]").textContent="-"+tf(d-S.t);
   if(S.got&&Date.now()-lastP>5000&&S.t>0){lastP=Date.now();o.onProgress&&o.onProgress(S.t,S.d)}},250);
- box._nsp=inst;NSP.active=inst;draw();play();return inst}
+ box._nsp=inst;NSP.active=inst;draw();play();if(o.vast)nsVast(v,R,o);return inst}
 function mount(box,o){
  try{window.NSTRACK&&window.NSTRACK(o)}catch(e){}if(box._nsp)box._nsp.destroy();if(o.src)return mountNative(box,o);const live=o.mode==="live",vs=DB.get("ns_vol",{v:80,m:false});let cc=0,muted=!GEST||vs.m;
  const url=st=>`${ytHost()}/embed/${encodeURIComponent(o.id)}?autoplay=1&controls=0&disablekb=1&fs=0&modestbranding=1&rel=0&iv_load_policy=3&playsinline=1&enablejsapi=1&mute=${muted?1:0}&cc_load_policy=${cc}&start=${Math.max(0,Math.floor(st))}${ytOrigin()}`;
