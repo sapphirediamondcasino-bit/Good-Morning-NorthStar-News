@@ -51,7 +51,7 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;color:var
 .nb{margin:14px 0;border-radius:4px;overflow:hidden;color:#fff;display:flex;align-items:stretch}.nb.nbc,.nb.nbc{background:linear-gradient(90deg,#16161d,#2a1a40)}.nb.usa{background:linear-gradient(90deg,#0a1f5c,#1b3f9e)}
 .nbh{padding:14px 20px;min-width:140px;display:flex;flex-direction:column;justify-content:center;border-right:3px solid;border-image:linear-gradient(#f9b700,#ee3b2a,#7b3fa0,#1b9ad6,#4cae3c) 1}.usa .nbh{border-image:linear-gradient(#e11,#fff,#2a5bd7) 1}
 .nbn{font:800 22px 'Newsreader',serif}.nbs{font-size:12px;opacity:.75}.nbt{overflow:hidden;flex:1;display:flex;align-items:center;mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)}
-.nbm{display:flex;gap:12px;padding:12px;width:max-content;animation:mq 36s linear infinite}.nbt:hover .nbm{animation-play-state:paused}@keyframes mq{to{transform:translateX(-50%)}}
+.nbm{display:flex;gap:12px;padding:12px;width:max-content;animation:mq 120s linear infinite}.nbt:hover .nbm{animation-play-state:paused}@keyframes mq{to{transform:translateX(-50%)}}
 .chip{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);padding:8px 18px;border-radius:99px;font-weight:700;white-space:nowrap;color:#fff}.chip:hover{background:rgba(255,255,255,.28);text-decoration:none}
 .cover{height:150px;border-radius:4px;background:linear-gradient(120deg,var(--c1),var(--c2))}.phead{display:flex;gap:18px;align-items:flex-end;margin:-44px 18px 0;flex-wrap:wrap}
 .av{width:96px;height:96px;border-radius:50%;background:var(--red);color:#fff;font:700 44px/96px 'Newsreader',serif;text-align:center;border:4px solid var(--bg)}
@@ -276,8 +276,8 @@ async function adopt(){const A=window.NSAUTH;if(!A)throw new Error("No site sess
  if(!ok){signOut();throw new Error((email||"This account")+" is signed in to the site, but it is not on the ns_admins allow-list, so it cannot open the console. Use northstar_admin_recovery.sql to add it.")}
  try{sessionStorage.setItem("ns_sb_admin_ok",String(Date.now()))}catch(e){}return email||true}
 async function recoverSend(email){const c=cfg();if(!c.ok)throw new Error("The backend connection is not set up in this browser.");email=String(email||"").trim();if(!/^\S+@\S+\.\S+$/.test(email))throw new Error("Enter the email of the admin account.");
- const r=await fetch(c.url+"/auth/v1/recover",{method:"POST",headers:{apikey:c.anon,"Content-Type":"application/json"},body:JSON.stringify({email})});
- if(!r.ok){const j=await r.json().catch(()=>({}));const msg=String(j.error_description||j.msg||j.message||("Could not send the email ("+r.status+")"));if(/sending recovery email|error sending|smtp|rate limit/i.test(msg))throw new Error("The reset email cannot be sent because this backend has no working mail server. Fix it in Supabase: Authentication > Emails > SMTP settings, or wait out the built-in mailer hourly limit. Until then use Continue as below, or run northstar_admin_recovery.sql to set the password.");throw new Error(msg)}return true}
+ const r=await fetch(c.url+"/auth/v1/recover",{method:"POST",headers:{apikey:c.anon,"Content-Type":"application/json"},body:JSON.stringify({email:email,redirect_to:location.origin+"/"})});
+ if(!r.ok){const j=await r.json().catch(()=>({}));const msg=String(j.error_description||j.msg||j.message||("Could not send the email ("+r.status+")"));if(/sending recovery email|error sending|smtp|rate limit/i.test(msg))throw new Error("The reset email could not be sent. In Supabase open Authentication > Emails > SMTP settings and check the Host: it must be your mail server (for example mail.yourdomain.com or the host in your domain's MX record), NOT your website address. Use port 465 with SSL, the full email address as the Username, and that mailbox password. Save changes, then try again. Until mail works, use Continue as below or run northstar_admin_recovery.sql to set the password.");throw new Error(msg)}return true}
 async function setPassword(token,pw){const c=cfg();const r=await fetch(c.url+"/auth/v1/user",{method:"PUT",headers:{apikey:c.anon,Authorization:"Bearer "+token,"Content-Type":"application/json"},body:JSON.stringify({password:pw})});
  if(!r.ok){const j=await r.json().catch(()=>({}));throw new Error(j.error_description||j.msg||j.message||("Could not change the password ("+r.status+")"))}return true}
 /* the reset email lands on the site with the token in the address; catch it before the page router treats it as a page name */
@@ -756,7 +756,7 @@ function nsPortrait(n){
    '<g opacity=".18" fill="none" stroke="#fff" stroke-width="1.4"><circle cx="150" cy="130" r="78"/><circle cx="150" cy="130" r="112"/></g>'+
    '<text x="150" y="158" text-anchor="middle" fill="rgba(255,255,255,.92)" font-family="Georgia,serif" font-weight="700" font-size="96">'+nsEsc(ini)+'</text>'+
    '<rect y="248" width="300" height="52" fill="rgba(0,0,0,.42)"/>'+
-   '<text x="150" y="280" text-anchor="middle" fill="#f4e6bd" font-family="Georgia,serif" font-size="17">'+nsEsc(name.slice(0,26))+'</text></svg>';
+   '<text x="150" y="281" text-anchor="middle" fill="#f4e6bd" font-family="Georgia,serif" font-weight="700" font-size="20">'+nsEsc(name.slice(0,26))+'</text></svg>';
   return "data:image/svg+xml;charset=utf-8,"+encodeURIComponent(svg)
 }
 function nsMark(n,c){
@@ -1333,11 +1333,11 @@ function liveGuide(el,getDv,setDv){if(!el)return;const days=[...Array(7)].map((_
  el.innerHTML=`<div class="filters"><select id="gd" aria-label="Day">${days.map((d,i)=>`<option value="${i}">${i?d.toLocaleDateString([],{weekday:"long",month:"short",day:"numeric"}):"Today"}</option>`).join("")}</select><select id="gh" aria-label="Start time">${[...Array(24)].map((_,h)=>`<option value="${h}">${new Date(2000,0,1,h).toLocaleTimeString([],{hour:"numeric"})}</option>`).join("")}</select><select id="gk" aria-label="Type"><option value="">All networks</option><option>Broadcast</option><option>Cable</option><option>Kids</option><option>Premium</option><option>Public</option><option>Sports</option></select><input id="gq" placeholder="Find a show"></div><p class="mute" id="gm"></p><div style="overflow-x:auto"><table class="gt eg" id="ge"></table></div>`;
  $("#gh").value=String(new Date().getHours());let EV=[];
  const draw=()=>{const di=+$("#gd").value,d=days[di],h=+$("#gh").value,t0=d.getTime()+h*36e5,slot=18e5,N=8,q=$("#gq").value.toLowerCase(),kind=$("#gk").value;
-  $("#gm").textContent="Times shown in your time zone ("+Intl.DateTimeFormat().resolvedOptions().timeZone+"). Schedule data from TVmaze.";$("#ge").innerHTML='<tr><td>Loading the guide...</td></tr>';
+  $("#gm").textContent="Times shown in your time zone ("+Intl.DateTimeFormat().resolvedOptions().timeZone+"). Schedule data from TVmaze. Networks outside our lineup follow our own channels.";$("#ge").innerHTML='<tr><td>Loading the guide...</td></tr>';
   schedule(iso(d)).then(E=>{if(!el.isConnected)return;if(!E.length){$("#ge").innerHTML='<tr><td>The schedule could not load. Your view may be blocking outside data. Open the site in Chrome from your domain.</td></tr>';return}
    const map={};NETS.forEach(n=>map[nk(n.n)]=n);Object.keys(NALIAS).forEach(a=>{const t=map[NALIAS[a]];if(t)map[a]=t});
-   const by={};E.forEach(e=>{const n=map[nk(e.n)];if(!n||(kind&&n.k!==kind))return;if(q&&!(e.s+" "+n.n).toLowerCase().includes(q))return;(by[n.n]=by[n.n]||[]).push(e)});
-   EV=[];const rows=NETS.filter(n=>by[n.n]).map(n=>{const L=by[n.n].sort((a,b)=>a.at-b.at);let idx=0,cells="";L.forEach(e=>{const s=Math.max(e.at,t0),en=Math.min(e.at+e.rt*6e4,t0+N*slot);if(en<=t0||s>=t0+N*slot)return;let i0=Math.round((s-t0)/slot),i1=Math.round((en-t0)/slot);if(i0<idx)i0=idx;if(i1<=i0)i1=i0+1;if(i1>N)i1=N;if(i0>=N)return;if(i0>idx)cells+=`<td class="gap" colspan="${i0-idx}"></td>`;const sh=SHOWS.find(x=>x.t.toLowerCase()===e.s.toLowerCase());EV.push(e);cells+=`<td class="evc" colspan="${i1-i0}">${sh?`<a href="#show/${sh.s}">${esc(e.s)}</a>`:esc(e.s)}<small>${new Date(e.at).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})}</small><button data-e="${EV.length-1}">+ DVR</button></td>`;idx=i1});if(idx<N)cells+=`<td class="gap" colspan="${N-idx}"></td>`;return `<tr><td class="nc"><a href="#network/${n.s}"><img src="${EMB[n.n]||wm(n.n,n.c)}" alt="">${esc(n.n)}</a></td>${cells}</tr>`});
+   const by={},EXT={};E.forEach(e=>{let n=map[nk(e.n)];if(!n){const k=nk(e.n);if(!k)return;n=EXT[k]=EXT[k]||{n:e.n,s:"",c:"#1b2a52",k:"Other",ext:1}}if(kind&&n.k!==kind)return;if(q&&!(e.s+" "+n.n).toLowerCase().includes(q))return;(by[n.n]=by[n.n]||[]).push(e)});
+   EV=[];const rows=[...NETS,...Object.values(EXT)].filter(n=>by[n.n]).map(n=>{const L=by[n.n].sort((a,b)=>a.at-b.at);let idx=0,cells="";L.forEach(e=>{const s=Math.max(e.at,t0),en=Math.min(e.at+e.rt*6e4,t0+N*slot);if(en<=t0||s>=t0+N*slot)return;let i0=Math.round((s-t0)/slot),i1=Math.round((en-t0)/slot);if(i0<idx)i0=idx;if(i1<=i0)i1=i0+1;if(i1>N)i1=N;if(i0>=N)return;if(i0>idx)cells+=`<td class="gap" colspan="${i0-idx}"></td>`;const sh=SHOWS.find(x=>x.t.toLowerCase()===e.s.toLowerCase());EV.push(e);cells+=`<td class="evc" colspan="${i1-i0}">${sh?`<a href="#show/${sh.s}">${esc(e.s)}</a>`:esc(e.s)}<small>${new Date(e.at).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})}</small><button data-e="${EV.length-1}">+ DVR</button></td>`;idx=i1});if(idx<N)cells+=`<td class="gap" colspan="${N-idx}"></td>`;const lab=n.ext?`<b class="ncx">${esc(n.n)}</b>`:`<a href="#network/${n.s}">${esc(n.n)}</a>`;return `<tr><td class="nc"><img src="${EMB[n.n]||wm(n.n,n.c)}" alt="">${lab}</td>${cells}</tr>`});
    $("#ge").innerHTML="<tr><th>Channel</th>"+[...Array(N)].map((_,i)=>`<th>${new Date(t0+i*slot).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})}</th>`).join("")+"</tr>"+(rows.join("")||'<tr><td colspan="9">Nothing matches that filter at this time.</td></tr>');
    el.querySelectorAll("[data-e]").forEach(b=>b.onclick=()=>{const e=EV[b.dataset.e],dt=new Date(e.at),dv=getDv();dv.push({id:now(),net:(map[nk(e.n)]||{n:e.n}).n,show:e.s,day:dt.getDay(),time:pad(dt.getHours())+":"+pad(dt.getMinutes()),rep:false,plat:""});setDv(dv);say("Added "+e.s+" to your DVR.")})})};
  el.querySelectorAll("select,input").forEach(i=>i.onchange=draw);$("#gq").oninput=draw;draw()}
@@ -1634,7 +1634,7 @@ const VER={
  "Stella Lefty":{bio:"Stella Lefty is an artist featured by Good Morning Northstar News. Her full profile is being verified with her team."}
 };
 if(!DB.get("gmnfix2",false)){try{const N=[...Object.keys(VER),"Isaac Mather"];Object.keys(localStorage).filter(k=>k.startsWith("gan_")&&k!=="gan_aimg"&&k!=="gan_abio"&&k!=="gan_avid"&&N.some(n=>k.includes(n))).forEach(k=>localStorage.removeItem(k));posts=posts.filter(p=>!(p.auto&&N.some(n=>p.title.includes(n))));save()}catch(e){}DB.set("gmnfix2",true)}
-if(!DB.get("gmnfix3",false)){["aimg","abio","avid"].forEach(k=>{const m=DB.get(k,{});Object.keys(VER).forEach(n=>delete m[n]);DB.set(k,m)});DB.set("gmnfix3",true)}
+/* NS-ART: never wipe an artist photo the admin saved. Older builds deleted them here by mistake. */
 Object.assign(ARTCH,DB.get("ach",{}));
 const dzc={};const dz=n=>dzc[n]||(dzc[n]=api("/artist-media?name="+encodeURIComponent(n)).then(d=>d.found?d:null).catch(()=>null));
 const _ai=artistInfo;artistInfo=function(n,actor){const v=VER[n];if(v){const own=DB.get("aimg",{})[n];return Promise.resolve({img:own||"",bio:DB.get("abio",{})[n]||v.bio})}
@@ -5179,23 +5179,23 @@ const C=()=>{const x=window.NSSB&&window.NSSB.cfg();return x&&x.ok?x:null};
 const b64u=b=>btoa(String.fromCharCode.apply(null,new Uint8Array(b))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
 const rnd=n=>b64u(crypto.getRandomValues(new Uint8Array(n)));
 const say2=m=>{try{if(typeof say==="function")say(m);else alert(m)}catch(e){alert(m)}};
-async function start(back){const c=C();if(!c)return say2("Sign-in is not set up on this site yet.");
- if(!(window.crypto&&crypto.subtle))return say2("Google sign-in needs a secure (https) connection.");
+async function start(back,prov){const provider=prov||"google",plabel=provider==="twitter"?"X":provider==="google"?"Google":provider;const c=C();if(!c)return say2("Sign-in is not set up on this site yet.");
+ if(!(window.crypto&&crypto.subtle))return say2(plabel+" sign-in needs a secure (https) connection.");
  try{const ver=rnd(48),chal=b64u(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(ver)));
-  sessionStorage.setItem("ns_pkce",JSON.stringify({v:ver,back:back||"profile",t:Date.now()}));
-  location.assign(c.url+"/auth/v1/authorize?provider=google&redirect_to="+encodeURIComponent(location.origin+location.pathname)+"&code_challenge="+chal+"&code_challenge_method=s256")}
- catch(e){say2("Could not start Google sign-in: "+e.message)}}
-function fail(m){say2(m||"Google sign-in did not finish. Please try again.");try{go("login")}catch(e){}}
+  sessionStorage.setItem("ns_pkce",JSON.stringify({v:ver,back:back||"profile",t:Date.now(),p:provider}));
+  location.assign(c.url+"/auth/v1/authorize?provider="+provider+"&redirect_to="+encodeURIComponent(location.origin+location.pathname)+"&code_challenge="+chal+"&code_challenge_method=s256")}
+ catch(e){say2("Could not start "+plabel+" sign-in: "+e.message)}}
+function fail(m){say2(m||"Sign-in did not finish. Please try again.");try{go("login")}catch(e){}}
 async function finish(){const q=new URLSearchParams(location.search),code=q.get("code"),err=q.get("error_description")||q.get("error");if(!code&&!err)return;
  let st=null;try{st=JSON.parse(sessionStorage.getItem("ns_pkce")||"null")}catch(e){}
  if(!st)return;                      /* a ?code that this page did not ask for is left alone */
  try{sessionStorage.removeItem("ns_pkce");history.replaceState(null,"",location.pathname+window.NSH())}catch(e){}
- if(err||!code)return fail(err?"Google sign-in was cancelled or refused: "+err:"");
- if(Date.now()-st.t>6e5)return fail("The Google sign-in took too long. Please try again.");
+ if(err||!code)return fail(err?"Sign-in was cancelled or refused: "+err:"");
+ if(Date.now()-st.t>6e5)return fail("The sign-in took too long. Please try again.");
  const c=C();if(!c)return fail("Sign-in is not set up on this site yet.");
  try{const r=await fetch(c.url+"/auth/v1/token?grant_type=pkce",{method:"POST",headers:{apikey:c.anon,"Content-Type":"application/json"},body:JSON.stringify({auth_code:code,code_verifier:st.v})});
-  const j=await r.json().catch(()=>({}));if(!r.ok||!j.access_token)return fail((j.error_description||j.msg||j.message||"Google sign-in failed ("+r.status+")"));
-  const email=String(j.user&&j.user.email||"").toLowerCase();if(!email)return fail("Google did not share an email address, so the account could not be created.");
+  const j=await r.json().catch(()=>({}));if(!r.ok||!j.access_token)return fail((j.error_description||j.msg||j.message||"Sign-in failed ("+r.status+")"));
+  let email=String(j.user&&j.user.email||"").toLowerCase();if(!email){const m2=(j.user&&j.user.user_metadata)||{};const un=String(m2.user_name||m2.preferred_username||"x"+(j.user&&j.user.id||Date.now())).replace(/[^a-z0-9_]/gi,"").toLowerCase();email=(un||("x"+Date.now()))+"@x.local";}
   try{localStorage.setItem("ns_user_jwt",JSON.stringify({token:j.access_token,refresh:j.refresh_token||"",exp:Date.now()+(j.expires_in||3600)*1e3,email}))}catch(e){}
   const pr=window.NSAUTH?await NSAUTH.prof():null;
   if(pr&&pr.status==="suspended"){try{NSAUTH.out()}catch(e){}return fail("This account is suspended. Please contact support.")}
@@ -5204,11 +5204,14 @@ async function finish(){const q=new URLSearchParams(location.search),code=q.get(
   session=u.id;if(pr&&window.NSAUTH)NSAUTH.apply(u,pr);DB.set("session",session);save();
   go(st.back||"profile")}
  catch(e){fail("Could not reach the sign-in service: "+e.message)}}
+const XLOGO='<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-2px;margin-right:9px"><path fill="currentColor" d="M18.9 2.1h3.3l-7.2 8.2 8.5 11.6h-6.7l-5.2-6.9-6 6.9H2.3l7.7-8.8L1.9 2.1h6.9l4.7 6.3 5.4-6.3zm-1.2 17.7h1.8L7.4 3.9H5.5l12.2 15.9z"/></svg>';
 const G='<svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true" style="vertical-align:-3px;margin-right:8px"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>';
 function addBtn(el){const go=(el||document).querySelector("#go"),card=go&&go.closest(".card");if(!card||card.querySelector("#nsgsi"))return;
- const w=card.querySelector(".warn"),row=document.createElement("div");row.className="row";row.innerHTML='<button class="btn alt" id="nsgsi" type="button" style="width:100%">'+G+'Continue with Google</button>';
- if(w){w.parentNode.insertBefore(row,w);w.textContent="Microsoft sign-in and 2-step codes are not turned on in this version."}else card.appendChild(row);
- row.querySelector("button").onclick=()=>start(typeof pend!=="undefined"&&pend&&pend.go||"profile")}
+ const w=card.querySelector(".warn"),row=document.createElement("div");row.className="row";row.innerHTML='<div style="display:grid;gap:8px;width:100%"><button class="btn alt" id="nsgsi" type="button" style="width:100%">'+G+'Continue with Google</button><button class="btn alt" id="nsxsi" type="button" style="width:100%">'+XLOGO+'Continue with X</button></div>';
+ if(w){w.parentNode.insertBefore(row,w);w.textContent="Sign in with Google or X. Microsoft sign-in and 2-step codes are not turned on in this version."}else card.appendChild(row);
+ const back=()=>typeof pend!=="undefined"&&pend&&pend.go||"profile";
+ row.querySelector("#nsgsi").onclick=()=>start(back());
+ row.querySelector("#nsxsi").onclick=()=>start(back(),"twitter")}
 try{if(typeof V!=="undefined"&&typeof V.login==="function"){const prev=V.login;V.login=function(a,el){prev.apply(this,arguments);try{addBtn(el)}catch(e){console.error(e)}}}}catch(e){}
 /* the login card can be drawn before this script runs or redrawn by other scripts, so attach whenever it appears */
 let qt=0;const watch=()=>{clearTimeout(qt);qt=setTimeout(()=>{try{addBtn(document)}catch(e){console.error(e)}},30)};
@@ -5998,5 +6001,160 @@ window.NSFEED={load,state:S};
 mount();
 })();
 </script>
+
+<script id="ns-art3">
+/* ===== NS-ART v3: real posters and photos, batched and cached =====
+   Source: Wikipedia page images (keyless, CORS enabled). A film page's lead image is
+   its poster and a person's lead image is their photo. Every card still has its
+   built-in NorthStar artwork underneath, so nothing is ever blank while this loads. */
+(function(){
+"use strict";
+if(window.__nsArt3)return;window.__nsArt3=1;
+var CKEY="nsart4",TTL=7*864e5,C={};
+try{C=JSON.parse(localStorage.getItem(CKEY)||"null")||{}}catch(e){C={}}
+var saveT=0;
+function saveC(){clearTimeout(saveT);saveT=setTimeout(function(){try{var k=Object.keys(C);if(k.length>1200)k.slice(0,k.length-1200).forEach(function(x){delete C[x]});localStorage.setItem(CKEY,JSON.stringify(C))}catch(e){}},700)}
+function key(k,t){return k+"|"+String(t||"").toLowerCase()}
+function cached(k,t){var e=C[key(k,t)];return e&&e.u&&Date.now()-e.t<TTL?e.u:""}
+function put(k,t,u){if(!/^https:\/\//.test(u||""))return;C[key(k,t)]={u:u,t:Date.now()};saveC()}
+function norm(t){return String(t||"").replace(/\s+/g," ").trim()}
+function clean(t){return norm(t).replace(/\s*\((?:all films|film series|franchise|franchise films|collection|live-action films)\)\s*$/i,"")}
+function variants(t,k){var b=clean(t),v=[b];if(k==="film"&&!/\(film\)$/i.test(b))v.push(b+" (film)");return v}
+function root(){return document.getElementById("app")||document.body}
+function verified(){try{return typeof VER!=="undefined"?VER:{}}catch(e){return{}}}
+
+
+function getJSON(url){
+ var ctl=null,t=0;
+ try{ctl=new AbortController();t=setTimeout(function(){try{ctl.abort()}catch(e){}},10000)}catch(e){}
+ return fetch(url,{mode:"cors",cache:"force-cache",signal:ctl?ctl.signal:undefined}).then(function(r){clearTimeout(t);return r.ok?r.json():null}).catch(function(){clearTimeout(t);return null})
+}
+
+function wikiBatch(items){
+ var titles=[];items.forEach(function(x){variants(x.title,x.kind).forEach(function(v){if(titles.indexOf(v)<0)titles.push(v)})});
+ if(!titles.length)return Promise.resolve([]);
+ var url="https://en.wikipedia.org/w/api.php?action=query&redirects=1&prop=pageimages&piprop=thumbnail&pithumbsize=700&pilicense=any&format=json&origin=*&titles="+encodeURIComponent(titles.join("|"));
+ return getJSON(url).then(function(j){
+  var q=(j&&j.query)||{},pages=q.pages||{},by={},al={};
+  (q.normalized||[]).forEach(function(x){al[String(x.from).toLowerCase()]=x.to});
+  (q.redirects||[]).forEach(function(x){al[String(x.from).toLowerCase()]=x.to});
+  Object.keys(pages).forEach(function(id){var p=pages[id];if(p&&p.thumbnail&&/^https:\/\//.test(p.thumbnail.source||"")){var uu=p.thumbnail.source.split("?")[0];if(/\.svg\//i.test(uu))return;by[String(p.title).toLowerCase()]=uu}});
+  function res(x){var vv=variants(x.title,x.kind);for(var i=0;i<vv.length;i++){var c=vv[i].toLowerCase();for(var n=0;n<3;n++){if(by[c])return by[c];if(!al[c])break;c=String(al[c]).toLowerCase()}if(by[c])return by[c]}return ""}
+  return items.map(function(x){return {title:x.title,kind:x.kind,u:res(x)}});
+ }).catch(function(){return []})
+}
+
+
+function wikiSearch(title,kind){
+ var q=clean(title)+(kind==="film"?" film":kind==="act"?" actor":"");
+ var url="https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch="+encodeURIComponent(q)+"&gsrlimit=1&prop=pageimages&piprop=thumbnail&pithumbsize=700&pilicense=any&format=json&origin=*";
+ return getJSON(url).then(function(j){
+  var p=j&&j.query&&j.query.pages,x=p&&Object.keys(p).map(function(k){return p[k]})[0];
+  var u=x&&x.thumbnail&&x.thumbnail.source?x.thumbnail.source.split("?")[0]:"";
+  return /^https:\/\//.test(u)&&!/\.svg\//i.test(u)?u:"";
+ }).catch(function(){return ""})
+}
+
+function collect(scope){
+ var out=[],V=verified();
+ function add(el,title,kind,type){if(!title)return;out.push({el:el,title:clean(title),kind:kind,type:type})}
+ function artOf(slug){try{var a=typeof ART!=="undefined"?ART:[];for(var i=0;i<a.length;i++)if(a[i].s===slug)return a[i]}catch(e){}return null}
+ scope.querySelectorAll("[data-movie]").forEach(function(a){var im=a.querySelector("img.pimg");if(im&&!im.dataset.nsa)add(im,a.dataset.movie,"film","img")});
+ scope.querySelectorAll("a.acard").forEach(function(a){
+  var th=a.querySelector(".thumb");if(!th||th.dataset.nsa)return;
+  if(/url\(["']?https?:/.test(th.getAttribute("style")||""))return;
+  var x=artOf((a.getAttribute("href")||"").split("/")[1]||"");
+  var name=x?x.n:norm(a.textContent);
+  if(!name||V[name])return;
+  add(th,name,x&&x.k==="Actor"?"act":"art","bg");
+ });
+ scope.querySelectorAll("[data-topic]").forEach(function(t){
+  var kind=t.getAttribute("data-tk"),title=t.getAttribute("data-topic");
+  if(t.dataset.nsa||!title||kind==="tv")return;
+  add(t,title,kind==="actor"?"act":kind,"bg");
+ });
+ var ap=scope.querySelector("#ap");
+ if(ap&&!ap.dataset.nsa){var h=scope.querySelector("h1"),name=norm(h&&h.textContent);if(name&&!V[name]){var xx=artOf("");try{xx=(typeof ART!=="undefined"?ART:[]).filter(function(y){return y.n===name})[0]||null}catch(e){}add(ap,name,xx&&xx.k==="Actor"?"act":"art","bg")}}
+ return out;
+}
+
+function applyOne(t,u){
+ if(!u||!t.el||!t.el.isConnected)return;
+ if(t.type==="img"){
+  var im=t.el;
+  if(!im.dataset.ph)im.dataset.ph=im.getAttribute("src")||"";
+  im.dataset.nsa="1";im.hidden=false;im.src=u;
+  im.onerror=function(){if(im.dataset.ph)im.src=im.dataset.ph;im.dataset.nsa=""};
+  var box=im.parentElement;if(box)box.querySelectorAll(".pt,.mono").forEach(function(x){x.hidden=true});
+ }else{
+  t.el.style.backgroundImage="linear-gradient(180deg,rgba(0,0,0,.04),rgba(0,0,0,.5)),url('"+u+"')";
+  t.el.style.backgroundSize="cover";t.el.style.backgroundPosition="center top";
+  t.el.dataset.nsa="1";t.el.classList.remove("gver");
+ }
+}
+
+var busy=false,pending=false,busyAt=0;
+function fill(scope){
+ scope=scope||root();if(!scope)return Promise.resolve();
+ if(busy&&Date.now()-busyAt<15000){pending=true;return Promise.resolve()}
+ busy=true;busyAt=Date.now();
+ var targets={},groups={film:[],act:[],art:[]};
+ return Promise.resolve().then(function(){
+  var list=collect(scope);
+  list.forEach(function(t){
+   var k=key(t.kind,t.title),u=cached(t.kind,t.title);
+   if(u){applyOne(t,u);return}
+   (targets[k]=targets[k]||[]).push(t);
+   if(groups[t.kind])groups[t.kind].push({title:t.title,kind:t.kind});
+  });
+  function uniq(a){var m={};a.forEach(function(x){m[key(x.kind,x.title)]=x});return Object.keys(m).map(function(k){return m[k]})}
+  var chain=Promise.resolve();
+  ["film","act","art"].forEach(function(kind){
+   var items=uniq(groups[kind]);
+   for(var i=0;i<items.length;i+=18)(function(chunk){
+    chain=chain.then(function(){return wikiBatch(chunk)}).then(function(res){
+     res.forEach(function(r){var k=key(r.kind,r.title);if(!r.u)return;put(r.kind,r.title,r.u);(targets[k]||[]).forEach(function(t){applyOne(t,r.u)})});
+    });
+   })(items.slice(i,i+18));
+  });
+  return chain;
+ }).catch(function(e){try{console.warn("NS art",e)}catch(x){}}).then(function(){
+  busy=false;if(pending){pending=false;setTimeout(function(){fill(root())},250)}
+  var misses=[];
+  Object.keys(targets).forEach(function(k){
+   var list=targets[k]||[];
+   if(!list.length||list.some(function(t){return t.el&&t.el.dataset&&t.el.dataset.nsa}))return;
+   misses.push({k:k,title:list[0].title,kind:list[0].kind});
+  });
+  misses=misses.slice(0,24);
+  var i=0;
+  function worker(){
+   var m=misses[i++];if(!m)return;
+   return wikiSearch(m.title,m.kind).then(function(u){
+    if(u){put(m.kind,m.title,u);(targets[m.k]||[]).forEach(function(t){applyOne(t,u)})}
+    worker();
+   })
+  }
+  worker();worker();worker();
+ });
+}
+
+/* take over the older one-by-one loader */
+try{window.hydrateWiki=function(el){fill(el||root())}}catch(e){}
+try{window.wpump=function(){}}catch(e){}
+window.nsFillArt=fill;
+try{
+ var moT=0;
+ new MutationObserver(function(){clearTimeout(moT);moT=setTimeout(function(){fill(root())},350)}).observe(root(),{childList:true,subtree:true});
+}catch(e){}
+setTimeout(function(){fill(root())},80);
+addEventListener("hashchange",function(){setTimeout(function(){fill(root())},150)});
+})();
+</script>
+
+<style id="ns-ver-badge">
+.acard .thumb.gver{position:relative}
+.acard .thumb.gver::after{content:"NORTHSTAR VERIFIED";position:absolute;left:0;right:0;bottom:0;padding:26px 6px 9px;background:linear-gradient(transparent,rgba(3,12,16,.9));color:#f0d68a;font:800 9px/1.2 system-ui;letter-spacing:.14em;text-align:center;pointer-events:none}
+</style>
 </body>
 </html>
