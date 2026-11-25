@@ -250,7 +250,7 @@ async function signIn(email,pw){const c=cfg();if(!c.ok)throw new Error("Enter th
  const j=await r.json().catch(()=>({}));if(!r.ok||!j.access_token)throw new Error(j.error_description||j.msg||j.message||("Sign-in failed ("+r.status+")"));
  putSess({token:j.access_token,refresh:j.refresh_token||"",exp:Date.now()+(j.expires_in||3600)*1e3,email});
  let ok=false;try{ok=await isAdmin()}catch(e){signOut();throw e}
- if(!ok){signOut();throw new Error("Signed in, but "+email+" is not on the ns_admins allow-list, so it cannot publish. Insert that email into public.ns_admins (see the setup instructions).")}
+ if(!ok){signOut();throw new Error("Signed in, but "+email+" is not on the ns_admins allow-list yet. On the Admin sign-in screen open \"Owner: unlock this console\", copy the one-time SQL, run it in Supabase, then sign in again.")}
  try{sessionStorage.setItem("ns_sb_admin_ok",String(Date.now()))}catch(e){}
  return true}
 function signOut(){try{sessionStorage.removeItem(JWT);sessionStorage.removeItem("ns_sb_admin_ok")}catch(e){}}
@@ -273,7 +273,7 @@ async function adopt(){const A=window.NSAUTH;if(!A)throw new Error("No site sess
  if(!t)throw new Error("You are not signed in to the backend from the site. Use \"Forgot password\" to set a password.");
  let email=(m&&m.email)||"";try{const p=JSON.parse(atob(t.split(".")[1].replace(/-/g,"+").replace(/_/g,"/")));email=p.email||email}catch(e){}
  putSess({token:t,refresh:"",exp:(m&&m.exp)||Date.now()+50*60e3,email});let ok=false;try{ok=await isAdmin()}catch(e){signOut();throw e}
- if(!ok){signOut();throw new Error((email||"This account")+" is signed in to the site, but it is not on the ns_admins allow-list, so it cannot open the console. Use northstar_admin_recovery.sql to add it.")}
+ if(!ok){signOut();throw new Error((email||"This account")+" is signed in to the site, but it is not on the ns_admins allow-list, so it cannot open the console. Open \"Owner: unlock this console\" on the Admin sign-in screen, copy the one-time SQL, run it in Supabase, then try again.")}
  try{sessionStorage.setItem("ns_sb_admin_ok",String(Date.now()))}catch(e){}return email||true}
 async function recoverSend(email){const c=cfg();if(!c.ok)throw new Error("The backend connection is not set up in this browser.");email=String(email||"").trim();if(!/^\S+@\S+\.\S+$/.test(email))throw new Error("Enter the email of the admin account.");
  const r=await fetch(c.url+"/auth/v1/recover",{method:"POST",headers:{apikey:c.anon,"Content-Type":"application/json"},body:JSON.stringify({email:email,redirect_to:location.origin+"/"})});
@@ -5063,6 +5063,58 @@ const _dLic=draw;draw=function(){_dLic();try{bindLic()}catch(e){console.error(e)
 {const _bk=bulkHTML;bulkHTML=function(){const L=licAll();return _bk().replace('<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button class="btn s" id="bkp"',L.length?`<label style="display:block;margin-top:6px">License deal for these titles <select id="bklic" style="${inpS}"><option value="">None</option>${L.map(d=>`<option value="${E(d.id)}" ${BK.lic===d.id?"selected":""}>${E(d.partner)}</option>`).join("")}</select></label><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button class="btn s" id="bkp"`:'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button class="btn s" id="bkp"')}}
 
 /* ---- Console login: get back in without the old password ---- */
+const ADMSQL=`-- ============================================================
+--  NorthStar admin recovery
+--  Supabase Dashboard -> SQL Editor -> New query -> paste -> Run
+--  Adds the owner emails to public.ns_admins so the console opens.
+--  Safe to run more than once.
+-- ============================================================
+do $$
+declare
+  c  text;
+  e1 text := 'tannerkurrasch@gmail.com';
+  e2 text := 'kurraschgamingmerchstore@gmail.com';
+  e3 text := 'info@goodartiestsnews.com';
+begin
+  -- create the allow-list table if this project never had one
+  if to_regclass('public.ns_admins') is null then
+    create table public.ns_admins (
+      email      text primary key,
+      created_at timestamptz not null default now()
+    );
+    alter table public.ns_admins enable row level security;
+  end if;
+
+  -- some installs call the column user_email instead of email
+  select column_name into c
+    from information_schema.columns
+   where table_schema = 'public'
+     and table_name   = 'ns_admins'
+     and column_name in ('email', 'user_email')
+   order by (column_name = 'email') desc
+   limit 1;
+
+  if c is null then
+    alter table public.ns_admins add column if not exists email text;
+    c := 'email';
+  end if;
+
+  -- insert only the addresses that are not already listed
+  execute format(
+    'insert into public.ns_admins(%I)
+     select v from (values (%L), (%L), (%L)) as t(v)
+      where not exists (
+        select 1 from public.ns_admins a where lower(a.%I) = lower(t.v)
+      )',
+    c, e1, e2, e3, c
+  );
+end $$;
+
+-- make sure the site's admin check can be called
+grant execute on function public.ns_is_admin() to anon, authenticated;
+
+-- show the allow-list (the SQL editor runs as the database owner)
+select * from public.ns_admins;`;
 const RC={msg:"",bad:0,open:0,busy:0};
 function siteSession(){try{const m=JSON.parse(localStorage.getItem("ns_user_jwt")||"null");return m&&m.token&&(!m.exp||m.exp>Date.now()-6e4||m.refresh)?m:null}catch(e){return null}}
 function decorateLogin(){const box=R.querySelector(".lg");if(!box||box.querySelector("#rcx"))return;const ss=siteSession(),mail=(R.querySelector("#e")||{}).value||"";
@@ -5070,10 +5122,12 @@ function decorateLogin(){const box=R.querySelector(".lg");if(!box||box.querySele
  ${ss?`<button class="btn" id="rcad" type="button" style="width:100%">Continue as ${E(ss.email||"the account signed in to the site")}</button><p class="mute" style="margin:6px 0 10px">You are already signed in to the site with this account. If it is an administrator you do not need the password.</p>`:""}
  <a href="#console" id="rcfg" style="font-size:13px">Forgot the password?</a>
  <div id="rcfm" ${RC.open?"":"hidden"} style="margin-top:8px"><input id="rce" type="email" placeholder="Admin account email" value="${E(mail)}" style="${inpS};width:100%"><button class="btn s" id="rcsd" type="button" style="margin-top:6px" ${RC.busy?"disabled":""}>Email me a reset link</button></div>
+<details id="rcadm" style="margin-top:10px"><summary style="cursor:pointer;font-size:13px;color:#7cc8ff">Owner: unlock this console (one-time SQL)</summary><p class="mute" style="margin:6px 0;font-size:12px">No file needed. Open Supabase, choose SQL Editor, New query, paste this, press Run. Then sign in above with that email, or press Continue with Google.</p><textarea id="rcsql" readonly rows="9" style="width:100%;box-sizing:border-box;font:12px/1.4 ui-monospace,Menlo,Consolas,monospace;background:#0a1330;color:#dbe4ff;border:1px solid #2f3894;border-radius:6px;padding:8px">${E(ADMSQL)}</textarea><button class="btn s" id="rccopy" type="button" style="margin-top:6px">Copy SQL</button></details>
  ${RC.msg?`<p style="color:${RC.bad?"#ff9db4":"#2de2d0"};margin:8px 0 0">${E(RC.msg)}</p>`:""}</div>`);
  const g=i=>box.querySelector("#"+i);
  g("rcfg").onclick=e=>{e.preventDefault();RC.open=1;g("rcfm").hidden=false;g("rce").focus()};
  const sd=g("rcsd");if(sd)sd.onclick=async()=>{RC.busy=1;RC.msg="Sending...";RC.bad=0;sd.disabled=true;try{await S.recoverSend(g("rce").value);RC.msg="Done. If that email belongs to an admin account, a reset link is on its way. Open it on this device; it brings you back here to choose a new password.";RC.bad=0}catch(e){RC.msg=e.message;RC.bad=1}RC.busy=0;draw()};
+ const cp=g("rccopy");if(cp)cp.onclick=async()=>{try{await navigator.clipboard.writeText(ADMSQL);cp.textContent="Copied. Paste it into Supabase and press Run."}catch(e){const ta=g("rcsql");if(ta){ta.focus();ta.select();try{document.execCommand("copy")}catch(x){}}cp.textContent="Selected. Press Ctrl or Cmd + C to copy."}};
  const ad=g("rcad");if(ad)ad.onclick=async()=>{ad.disabled=true;RC.msg="Checking...";RC.bad=0;try{await S.adopt();RC.msg="";draw()}catch(e){RC.msg=e.message;RC.bad=1;draw()}}}
 function recoveryHTML(){const err=sessionStorage.getItem("ns_recovery_err");
  if(err)return`<div class="lg"><h2 style="color:#7cc8ff">That reset link did not work</h2><p style="opacity:.85">${E(err)}</p><p class="mute">Reset links work once and expire quickly. Request a new one.</p><button class="btn" id="rcback">Back to sign in</button></div>`;
@@ -6158,3 +6212,4 @@ addEventListener("hashchange",function(){setTimeout(function(){fill(root())},150
 </style>
 </body>
 </html>
+v
