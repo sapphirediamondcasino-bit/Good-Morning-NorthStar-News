@@ -6613,5 +6613,50 @@ addEventListener("hashchange",function(){setTimeout(function(){fill(root())},150
 })();
 </script>
 
+
+<!-- ===== NorthStar admin: in-page console (no overlay) ===== -->
+<style id="ns-admin-inpage-css">
+  /* The console keeps its own layout, but it sits in the page between the site nav and the footer
+     instead of covering the home page. */
+  #nsc.nspage{position:static;inset:auto;z-index:1;height:auto;max-height:none;width:100%;
+    max-width:1440px;margin:0 auto;grid-template-rows:auto auto;border-radius:0;box-shadow:none}
+  #nsc.nspage .tb{position:sticky;top:0;z-index:3}
+  #nsc.nspage .mn,#nsc.nspage .rt{overflow:visible;max-height:none;padding-bottom:24px}
+  #nsc.nspage .sb{max-height:none;overflow:visible}
+  @media(max-width:1000px){#nsc.nspage{grid-template-rows:auto auto auto auto}}
+</style>
+<script id="ns-admin-inpage">
+/* Admin opens as a page of this site: same file, same nav, same footer, nothing floating over the home page. */
+(function(){
+  "use strict";
+  var C=null, APP=null, moving=false;
+  function grab(){ if(!C||!C.isConnected) C=document.getElementById("nsc"); if(!APP||!APP.isConnected) APP=document.getElementById("app"); return !!(C&&APP); }
+  function onConsole(){ var h=(window.NSH?window.NSH():(location.hash||"")); return /^#console(?:\/|$)/.test(h); }
+  function place(){
+    if(!grab()||moving) return;
+    moving=true;
+    try{
+      if(onConsole()){
+        if(C.previousSibling!==APP && C.nextSibling!==APP) APP.parentNode.insertBefore(C, APP);
+        C.classList.add("nspage");
+        if(C.hidden) C.hidden=false;
+        if(document.body.style.overflow==="hidden") document.body.style.overflow="";
+      } else {
+        C.classList.remove("nspage");
+        if(C.parentNode!==document.body) document.body.appendChild(C);
+      }
+    } finally { moving=false; }
+  }
+  function soon(){ setTimeout(place,0); requestAnimationFrame(function(){ place(); }); }
+  addEventListener("hashchange",soon);
+  document.addEventListener("DOMContentLoaded",soon);
+  if(document.readyState!=="loading") soon();
+  var boot=setInterval(function(){ if(grab()){ clearInterval(boot); soon();
+      try{ new MutationObserver(function(){ if(onConsole()&&!C.hidden) place(); }).observe(C,{attributes:true,attributeFilter:["hidden"]}); }catch(e){}
+      try{ new MutationObserver(function(){ if(onConsole()&&document.body.style.overflow==="hidden") document.body.style.overflow=""; }).observe(document.body,{attributes:true,attributeFilter:["style"]}); }catch(e){}
+    } },100);
+  setTimeout(function(){clearInterval(boot)},20000);
+})();
+</script>
 </body>
 </html>
